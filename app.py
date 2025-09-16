@@ -25,35 +25,6 @@ EN_LABEL = {
     "로즈우드": "Rosewood", "시더우드": "Cedarwood", "패출리": "Patchouli", "통카빈": "Tonka Bean",
 }
 
-# =====================
-# 카드 이미지 URL (원하는 이미지로 교체하세요)
-# =====================
-IMAGE_URL = {
-    # Top
-    "레몬": "images/lemon.jpg",
-    "스윗오렌지": "images/sweet_orange.jpg",
-    "버가못": "images/bergamot.jpeg",
-    "그린애플": "images/green_apple.jpeg",
-
-    # Middle - Floral
-    "로즈제라늄": "images/rose_geranium.jpg",
-    "일랑일랑": "images/ylangylang.jpg",
-    "네롤리": "images/neroli.jpg",
-    "로즈": "images/rose.png",
-
-    # Middle - Herb
-    "라벤더": "images/lavender.png",
-    "로즈마리": "images/rosemary.png",
-    "클라리세이지": "images/clary_sage.jpg",
-    "스피어민트": "images/spearmint.jpg",
-
-    # Base
-    "로즈우드": "images/rosewood.jpg",
-    "시더우드": "images/cedarwood.jpeg",
-    "패출리": "images/patchouli.jpeg",
-    "통카빈": "images/tonka_bean.jpg",
-}
-
 
 # =====================
 # 공통 스타일 (그린 톤 + 정사각 카드 + 체크 아이콘)
@@ -110,152 +81,89 @@ CHECK_ICON = """
   <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 """
-
-TOP_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Top note 선택</title>{STYLE}</head>
-<body><div class=wrap>
-  <header>
-    <h1 style=\"margin:0;\">Top note 선택</h1>
-    <div class=qr><img src=\"{{{{ url_for('qr_png') }}}}\" width=110 height=110 alt=\"QR\"></div>
-  </header>
-  <p class=muted>레몬 / 스윗오렌지 / 버가못 / 그린애플 중 1개 선택</p>
-  <form method=post action=\"{{{{ url_for('middle') }}}}\"> 
-    <div class=grid>
-      {{% for name in top_items.keys() %}}
-      <label class=card>
-        <input type=radio name=top value=\"{{{{name}}}}\" required>
-        <span class=thumb><img src=\"{{{{ images.get(name) }}}}\" alt=\"{{{{name}}}}\"></span>
-        <span class=name>{{{{name}}}}</span>
-        <span class=en>{{{{ en[name] }}}}</span>
-        <div class=select-wrap>
-          <span class=select-pill> {CHECK_ICON} 선택 </span>
-        </div>
-      </label>
-      {{% endfor %}}
+TOP_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Top note 선택</title>
+</head>
+<body>
+  <h1>Top note 선택</h1>
+  {% for name, eng in options %}
+    <div class="card">
+      <img src="{{ url_for('static', filename=images.get(name)) }}" alt="{{name}}">
+      <p>{{ name }}<br>{{ eng }}</p>
+      <button onclick="select('{{name}}')">선택</button>
     </div>
-    <p style=\"margin-top:16px;\"><button class=btn type=submit>다음 (Middle)</button></p>
-  </form>
-</div></body></html>
+  {% endfor %}
+</body>
+</html>
 """
 
-MIDDLE_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Middle note 선택</title>{STYLE}</head>
-<body><div class=wrap>
-  <h1 style=\"margin:0;\">Middle note 선택</h1>
-  <form method=post action=\"{{{{ url_for('base') }}}}\"> 
-    <input type=hidden name=top value=\"{{{{top}}}}\"> 
-
-    <div class=section>
-      <h3>플로랄</h3>
-      <div class=grid>
-        {{% for name in floral.keys() %}}
-        <label class=card>
-          <input type=radio name=middle value=\"{{{{name}}}}\" required>
-          <span class=thumb><img src=\"{{{{ images.get(name) }}}}\" alt=\"{{{{name}}}}\"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap>
-            <span class=select-pill> {CHECK_ICON} 선택 </span>
-          </div>
-        </label>
-        {{% endfor %}}
-      </div>
+MIDDLE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Middle note 선택</title>
+</head>
+<body>
+  <h1>Middle note 선택</h1>
+  {% for name, eng in options %}
+    <div class="card">
+      <img src="{{ url_for('static', filename=images.get(name)) }}" alt="{{name}}">
+      <p>{{ name }}<br>{{ eng }}</p>
+      <button onclick="select('{{name}}')">선택</button>
     </div>
-
-    <div class=section>
-      <h3>허브</h3>
-      <div class=grid>
-        {{% for name in herb.keys() %}}
-        <label class=card>
-          <input type=radio name=middle value=\"{{{{name}}}}\" required>
-          <span class=thumb><img src=\"{{{{ images.get(name) }}}}\" alt=\"{{{{name}}}}\"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap>
-            <span class=select-pill> {CHECK_ICON} 선택 </span>
-          </div>
-        </label>
-        {{% endfor %}}
-      </div>
-    </div>
-
-    <p style=\"margin-top:16px;\"><button class=btn type=submit>다음 (Base)</button></p>
-  </form>
-</div></body></html>
+  {% endfor %}
+</body>
+</html>
 """
 
-BASE_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Base note 선택</title>{STYLE}</head>
-<body><div class=wrap>
-  <h1 style=\"margin:0;\">Base note 선택</h1>
-  <form method=post action=\"{{{{ url_for('amount') }}}}\"> 
-    <input type=hidden name=top value=\"{{{{top}}}}\"> 
-    <input type=hidden name=middle value=\"{{{{middle}}}}\"> 
-    <div class=grid>
-      {{% for name in base_items.keys() %}}
-      <label class=card>
-        <input type=radio name=base value=\"{{{{name}}}}\" required>
-        <span class=thumb><img src=\"{{{{ images.get(name) }}}}\" alt=\"{{{{name}}}}\"></span>
-        <span class=name>{{{{name}}}}</span>
-        <span class=en>{{{{ en[name] }}}}</span>
-        <div class=select-wrap>
-          <span class=select-pill> {CHECK_ICON} 선택 </span>
-        </div>
-      </label>
-      {{% endfor %}}
+BASE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Base note 선택</title>
+</head>
+<body>
+  <h1>Base note 선택</h1>
+  {% for name, eng in options %}
+    <div class="card">
+      <img src="{{ url_for('static', filename=images.get(name)) }}" alt="{{name}}">
+      <p>{{ name }}<br>{{ eng }}</p>
+      <button onclick="select('{{name}}')">선택</button>
     </div>
-    <p style=\"margin-top:16px;\"><button class=btn type=submit>다음 (총량 입력)</button></p>
-  </form>
-</div></body></html>
+  {% endfor %}
+</body>
+</html>
 """
 
-AMOUNT_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>총량 입력</title>{STYLE}</head>
-<body><div class=wrap>
-  <h1>총량 입력</h1>
-  <form method=post action=\"{{{{ url_for('result') }}}}\"> 
-    <input type=hidden name=top value=\"{{{{top}}}}\"> 
-    <input type=hidden name=middle value=\"{{{{middle}}}}\"> 
-    <input type=hidden name=base value=\"{{{{base}}}}\"> 
-    <p>최종으로 넣을 총 용량(ml)을 입력하세요:</p>
-    <input type=number name=total_amount step=0.1 min=0.1 required> ml
-    <p style=\"margin-top:16px;\"><button class=btn type=submit>결과 보기</button></p>
-  </form>
-</div></body></html>
-"""
-
-RESULT_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>블렌딩 결과</title>{STYLE}</head>
-<body><div class=wrap>
-  <header>
-    <h1 style=\"margin:0;\">블렌딩 결과</h1>
-    <div class=qr><img src=\"{{{{ url_for('qr_png') }}}}\" width=110 height=110 alt=\"QR\"></div>
-  </header>
-  <p class=muted>입력한 총량을 비율에 따라 카드별 ml로 환산합니다.</p>
+RESULT_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>결과</title>
+</head>
+<body>
+  <h1>선택 결과</h1>
   <table>
-    <thead><tr><th>카테고리</th><th>이미지</th><th>카드</th><th>영문</th><th>블렌딩 팩터</th><th>비율(%)</th><th>실제 ml</th></tr></thead>
-    <tbody>
-      <tr><td>Top</td>
-          <td><img class=t-thumb src=\"{{{{ images[top] }}}}\" alt=\"\"></td>
-          <td>{{{{top}}}}</td><td>{{{{ en[top] }}}}</td>
-          <td>{{{{w_top}}}}</td><td>{{{{p_top}}}}</td><td>{{{{ml_top}}}}</td></tr>
-
-      <tr><td>Middle</td>
-          <td><img class=t-thumb src=\"{{{{ images[middle] }}}}\" alt=\"\"></td>
-          <td>{{{{middle}}}}</td><td>{{{{ en[middle] }}}}</td>
-          <td>{{{{w_mid}}}}</td><td>{{{{p_mid}}}}</td><td>{{{{ml_mid}}}}</td></tr>
-
-      <tr><td>Base</td>
-          <td><img class=t-thumb src=\"{{{{ images[base] }}}}\" alt=\"\"></td>
-          <td>{{{{base}}}}</td><td>{{{{ en[base] }}}}</td>
-          <td>{{{{w_base}}}}</td><td>{{{{p_base}}}}</td><td>{{{{ml_base}}}}</td></tr>
-
-      <tr><th colspan=4>합계</th><th>{{{{total}}}}</th><th>100.0</th><th>{{{{total_amount}}}}</th></tr>
-    </tbody>
+    <tr>
+      <td><img class="t-thumb" src="{{ url_for('static', filename=images[top]) }}" alt="Top"></td>
+      <td>{{ top }}</td>
+    </tr>
+    <tr>
+      <td><img class="t-thumb" src="{{ url_for('static', filename=images[middle]) }}" alt="Middle"></td>
+      <td>{{ middle }}</td>
+    </tr>
+    <tr>
+      <td><img class="t-thumb" src="{{ url_for('static', filename=images[base]) }}" alt="Base"></td>
+      <td>{{ base }}</td>
+    </tr>
   </table>
-  <p style=\"margin-top:16px;\"><a class=btn href=\"{{{{ url_for('index') }}}}\">처음부터 다시</a></p>
-</div></body></html>
+</body>
+</html>
 """
+
 
 # =====================
 # 유틸 & 라우트
