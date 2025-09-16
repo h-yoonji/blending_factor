@@ -45,89 +45,100 @@ IMAGES = {
 # 스타일 (모바일 2열, 이미지 1:1 cover, 표 중앙정렬)
 # =====================
 STYLE = """
-<style>
-  body { 
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif; 
-    margin: 8px;               /* ⬅️ 좌우 여백 크게 줄임 */
-    padding: 0;
-    font-size: 20px;           /* ⬅️ 기본 글씨 크기 키움 */
-    line-height: 1.6;
-  }
-  .wrap { 
-    max-width: 100%;           /* ⬅️ 화면 전체 너비 활용 */
-    margin: 0 auto; 
-    padding: 0 4px;
-  }
-  h1, h3 { 
-    font-size: 28px;           /* ⬅️ 제목 크게 */
-    text-align: center; 
-    margin-bottom: 12px;
-  }
-  p, label { 
-    font-size: 22px;           /* ⬅️ 본문 글씨 크게 */
-  }
-  .btn { 
-    font-size: 22px;           /* ⬅️ 버튼 글씨 크게 */
-    padding: 16px 20px;        /* ⬅️ 버튼 자체도 크게 */
-    border-radius: 12px;
-    background: #3a7a3a;       /* 진한 초록 */
-    color: #fff; 
-    font-weight: 700; 
-    cursor: pointer; 
-    border: none; 
-    width: 100%;               /* ⬅️ 버튼 가로 전체 */
-    margin-top: 12px;
-  }
-  input[type="number"] {
-    font-size: 24px;           /* ⬅️ 총량 입력칸 크게 */
-    padding: 12px;
-    width: 100%;
-    border: 2px solid #3a7a3a;
-    border-radius: 8px;
-    text-align: center;
-  }
-  .grid { 
-    display: grid; 
-    grid-template-columns: repeat(2, 1fr);  /* ⬅️ 항상 2열 */
-    gap: 12px; 
-    margin-top: 12px; 
-  }
-  .card { 
-    border: 2px solid #3a7a3a;
-    border-radius: 12px; 
-    padding: 12px; 
-    text-align: center; 
-    background: #f8fff8;
-  }
-  .thumb { 
-    width: 100%; 
-    aspect-ratio: 1 / 1; 
-    border-radius: 12px; 
-    overflow: hidden; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin-bottom: 8px;
-  }
-  .thumb img { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: contain; 
-  }
-  table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-top: 16px; 
-    font-size: 20px; 
-  }
-  th, td { 
-    border-bottom: 1px solid #ccc; 
-    text-align: center; 
-    padding: 12px; 
-  }
-</style>
+  <style>
+    :root {
+      --fg:#0b3d1b; --muted:#4f665c; --bd:#cceccc; --sel:#166534; --sel-weak:#22c55e;
+      --bg:#f6fff6; --pill:#eaffef; --white:#ffffff;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: system-ui, Apple SD Gothic Neo, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif;
+      margin: 8px; padding: 0; color: var(--fg); background:#fff;
+      font-size: 19px; line-height: 1.55;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 2px; }
 
+    header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .qr { border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg); }
+    .muted { color: var(--muted); font-size: 16px; }
+    h1 { font-size: 30px; margin: 6px 0 8px; }
+    h3 { margin: 8px 0; }
+
+    /* 총량 입력: 세로로 두툼하게 */
+    .amount-box {
+      font-size: 28px; font-weight: 800; text-align: center;
+      width: 100%; height: 64px; border: 2px solid var(--sel); border-radius: 12px;
+      padding: 8px 12px; background:#fff;
+    }
+    .btn {
+      font-size: 22px; padding: 16px 20px; border-radius: 12px;
+      background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
+    }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    .toolbar { display:flex; justify-content: space-between; align-items:center; margin-top: 4px; }
+    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:6px 10px; border-radius:999px; font-size:12px; }
+
+    /* 모바일 2열 */
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+
+    /* 카드: 기본은 밝은 초록 윤곽, 내용은 왼쪽 정렬 */
+    .card {
+      position: relative; border: 2px solid var(--bd); border-radius: 14px;
+      padding: 10px 10px 70px; background:#ffffff;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+      text-align: left;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .card:hover { box-shadow: 0 6px 20px rgba(20,83,45,.10); }
+
+    .thumb {
+      width:100%; aspect-ratio: 1/1; border-radius: 10px; overflow:hidden;
+      background: var(--bg); display:flex; align-items:center; justify-content:center;
+      border:1px solid var(--bd); margin-bottom:8px;
+    }
+    /* 썸네일은 1:1 꽉 차게 (카드에서 보기 좋게) */
+    .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
+
+    .name { display:block; margin-top:4px; line-height:1.2; font-weight:900; font-size:18px; }
+    .en   { display:block; margin-top:2px; margin-bottom:6px; line-height:1.15; font-size:12px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
+
+    /* 귀여운 체크 pill */
+    .select-wrap { position:absolute; left:0; right:0; bottom:10px; display:flex; justify-content:center; }
+    .select-pill {
+      display:inline-flex; align-items:center; gap:6px; background: var(--pill); color:#065f46;
+      border:1px solid #b7efc5; padding:8px 12px; border-radius:999px; font-weight:800;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+    }
+    .select-pill svg { width:18px; height:18px; }
+
+    /* 카드 전체 클릭으로 체크 */
+    .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+    /* 체크되면 카드 전체가 진한 초록색 + 글자는 흰색으로 반전 */
+    .card:has(input[type="checkbox"]:checked) {
+      background: var(--sel); border-color: var(--sel); color: var(--white);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.25) inset;
+    }
+    .card:has(input[type="checkbox"]:checked) .en { color: #e6ffe6; }
+    .card:has(input[type="checkbox"]:checked) .thumb { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.08); }
+    .card:has(input[type="checkbox"]:checked) .select-pill { background: rgba(255,255,255,.15); color:#fff; border-color: rgba(255,255,255,.6); }
+
+    .section { margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--bg); border:1px solid var(--bd); }
+
+    /* 결과 테이블 */
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 18px; }
+    th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 10px; }
+    thead th { background:#f6fff6; text-align: center; }
+
+    /* 결과 이미지: 과하게 크지 않게 1:1 정사각 고정 */
+    .t-thumb { width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid var(--bd); }
+
+    a.btn { text-decoration: none; display: inline-block; }
+  </style>
 """
+
 
 CHECK_ICON = """
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -173,7 +184,7 @@ AMOUNT_START_HTML = f"""
   <h1>총량 입력</h1>
   <form method=post action="{{{{ url_for('top') }}}}">
     <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-    <input type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 10.0"> ml
+    <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 10.0"> ml
     <p style="margin-top:12px;"><button class=btn type=submit>다음 (Top 선택)</button></p>
   </form>
 </div></body></html>
