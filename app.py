@@ -280,26 +280,42 @@ RESULT_HTML = f"""
   <p class=muted style="text-align:center;">선택한 카드들의 블렌딩 팩터 합을 기준으로 총량을 배분합니다.</p>
 
   <table>
-    <thead><tr><th>구분</th><th>이미지</th><th>카드</th><th>영문</th><th>팩터</th><th>비율(%)</th><th>ml</th></tr></thead>
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>이미지</th>
+        <th>카드</th>
+        <th>팩터</th>
+        <th>비율(%)</th>
+        <th>ml</th>
+      </tr>
+    </thead>
     <tbody>
       {{% for row in rows %}}
       <tr>
         <td>{{{{row.category}}}}</td>
         <td><img class="t-thumb" src="{{{{ url_for('static', filename=row.img) }}}}"></td>
         <td>{{{{row.name}}}}</td>
-        <td>{{{{row.en}}}}</td>
         <td>{{{{row.factor}}}}</td>
         <td>{{{{row.pct}}}}</td>
         <td>{{{{row.ml}}}}</td>
       </tr>
       {{% endfor %}}
-      <tr><th colspan=4>합계</th><th>{{{{total_weight}}}}</th><th>100.0</th><th>{{{{total_amount}}}}</th></tr>
+      <tr>
+        <th colspan=3>합계</th>
+        <th>{{{{total_weight}}}}</th>
+        <th>100.0</th>
+        <th>{{{{total_amount}}}}</th>
+      </tr>
     </tbody>
   </table>
 
-  <p style="margin-top:12px; text-align:center;"><a class=btn href="{{{{ url_for('index') }}}}">처음부터 다시</a></p>
+  <p style="margin-top:12px; text-align:center;">
+    <a class=btn href="{{{{ url_for('index') }}}}">처음부터 다시</a>
+  </p>
 </div></body></html>
 """
+
 
 # =====================
 # 유틸
@@ -395,8 +411,13 @@ def result():
         return redirect(url_for("base"))
 
     rows, total_weight = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
-    return render_template_string(RESULT_HTML,
-                                  rows=rows, total_weight=total_weight, total_amount=round(total_amount,1))
+    return render_template_string(
+        RESULT_HTML,
+        rows=rows,
+        total_weight=total_weight,
+        total_amount=round(total_amount,1)
+    )
+
 
 @app.get("/qr.png")
 def qr_png():
