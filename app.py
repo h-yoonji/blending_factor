@@ -45,54 +45,88 @@ IMAGES = {
 # 스타일 (모바일 2열, 이미지 1:1 cover, 표 중앙정렬)
 # =====================
 STYLE = """
-  <style>
-    :root { --fg:#0b3d1b; --muted:#557166; --bd:#d6f5d6; --sel:#16a34a; --bg:#f0fff0; --pill:#dcfce7; }
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif; margin: 16px; color: var(--fg); background:#fff; }
-    .wrap { max-width: 480px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .qr { border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg); }
-    .muted { color: var(--muted); font-size: 13px; }
-    h1 { font-size: 28px; margin: 6px 0 6px; }
-    h3 { margin: 8px 0; }
-    .toolbar { display:flex; justify-content: space-between; align-items:center; }
-    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:6px 10px; border-radius:999px; font-size:12px; }
+<style>
+  body { 
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif; 
+    margin: 8px;               /* ⬅️ 좌우 여백 크게 줄임 */
+    padding: 0;
+    font-size: 20px;           /* ⬅️ 기본 글씨 크기 키움 */
+    line-height: 1.6;
+  }
+  .wrap { 
+    max-width: 100%;           /* ⬅️ 화면 전체 너비 활용 */
+    margin: 0 auto; 
+    padding: 0 4px;
+  }
+  h1, h3 { 
+    font-size: 28px;           /* ⬅️ 제목 크게 */
+    text-align: center; 
+    margin-bottom: 12px;
+  }
+  p, label { 
+    font-size: 22px;           /* ⬅️ 본문 글씨 크게 */
+  }
+  .btn { 
+    font-size: 22px;           /* ⬅️ 버튼 글씨 크게 */
+    padding: 16px 20px;        /* ⬅️ 버튼 자체도 크게 */
+    border-radius: 12px;
+    background: #3a7a3a;       /* 진한 초록 */
+    color: #fff; 
+    font-weight: 700; 
+    cursor: pointer; 
+    border: none; 
+    width: 100%;               /* ⬅️ 버튼 가로 전체 */
+    margin-top: 12px;
+  }
+  input[type="number"] {
+    font-size: 24px;           /* ⬅️ 총량 입력칸 크게 */
+    padding: 12px;
+    width: 100%;
+    border: 2px solid #3a7a3a;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr);  /* ⬅️ 항상 2열 */
+    gap: 12px; 
+    margin-top: 12px; 
+  }
+  .card { 
+    border: 2px solid #3a7a3a;
+    border-radius: 12px; 
+    padding: 12px; 
+    text-align: center; 
+    background: #f8fff8;
+  }
+  .thumb { 
+    width: 100%; 
+    aspect-ratio: 1 / 1; 
+    border-radius: 12px; 
+    overflow: hidden; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin-bottom: 8px;
+  }
+  .thumb img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain; 
+  }
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 16px; 
+    font-size: 20px; 
+  }
+  th, td { 
+    border-bottom: 1px solid #ccc; 
+    text-align: center; 
+    padding: 12px; 
+  }
+</style>
 
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; } /* 2열 고정 */
-
-    .card { position: relative; border: 2px solid #e6f5e6; border-radius: 14px; padding: 10px 10px 70px; background:#fff; transition: border-color .16s ease, box-shadow .16s ease; }
-    .card:hover { box-shadow: 0 8px 24px rgba(20,83,45,.10); }
-
-    .thumb { width:100%; aspect-ratio: 1/1; border-radius: 10px; overflow:hidden; background: var(--bg);
-             display:flex; align-items:center; justify-content:center; border:1px solid var(--bd);
-             margin-bottom:8px; }
-    .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; } /* 1:1 꽉 채움 (cover) */
-
-    .name { display:block; margin-top:4px; line-height:1.2; font-weight:800; }
-    .en   { display:block; margin-top:3px; margin-bottom:6px; line-height:1.15; font-size:12px; color:#2e7d32; font-weight:600; letter-spacing:.2px; }
-
-    .select-wrap { position:absolute; left:0; right:0; bottom:8px; display:flex; justify-content:center; }
-    .select-pill { display:inline-flex; align-items:center; gap:6px; background: var(--pill); color:#065f46;
-                   border:1px solid #b7efc5; padding:8px 12px; border-radius:999px; font-weight:700; }
-    .select-pill svg { width:18px; height:18px; }
-
-    .card input[type="checkbox"] { position:absolute; opacity:0; pointer-events:none; }
-    .card:has(input[type="checkbox"]:checked) { border-color: var(--sel); box-shadow: 0 0 0 4px rgba(22,163,74,.12) inset; }
-    .card:has(input[type="checkbox"]:checked) .select-pill { background:#16a34a; color:#fff; border-color:#16a34a; }
-
-    .btn { padding: 12px 14px; border-radius: 10px; background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%; }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
-
-    .section { margin-top: 14px; padding: 10px; border-radius: 10px; background: var(--bg); border:1px solid var(--bd); }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 8px; font-size: 14px; }
-    thead th { background:#f6fff6; text-align: center; }
-    .t-thumb { width:44px; height:44px; border-radius:8px; object-fit:cover; border:1px solid var(--bd); }
-
-    input[type="number"] { padding: 8px; border: 1px solid #bfe8bf; border-radius: 8px; width: 140px; }
-    a.btn { text-decoration: none; display: inline-block; }
-  </style>
 """
 
 CHECK_ICON = """
