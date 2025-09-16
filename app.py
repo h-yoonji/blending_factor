@@ -138,7 +138,7 @@ AMOUNT_START_HTML = f"""
 <body><div class=wrap>
   <h1>총량 입력</h1>
   <form method=post action="{{{{ url_for('top') }}}}">
-    <p class=muted>각 카테고리에서 최소 1개 이상 선택하세요. (중복 선택 가능)</p>
+    <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
     <input type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 10.0"> ml
     <p style="margin-top:12px;"><button class=btn type=submit>다음 (Top 선택)</button></p>
   </form>
