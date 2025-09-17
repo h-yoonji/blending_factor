@@ -42,7 +42,7 @@ IMAGES = {
 }
 
 # =====================
-# 스타일 (모바일 2열, 좌우 여백 절반, QR 고정)
+# 스타일 (모바일 2열, 좌우 여백 절반)
 # =====================
 STYLE = """
   <style>
@@ -61,7 +61,7 @@ STYLE = """
     h1 { font-size: 30px; margin: 6px 0 8px; }
     .muted { color: var(--muted); font-size: 16px; }
 
-    /* 항상 우상단 고정 QR */
+    /* (결과 화면에서만 사용) 항상 우상단 고정 QR */
     .qr-fixed {
       position: fixed;
       top: 10px; right: 10px;
@@ -167,12 +167,12 @@ function validateChecked(form, groupName){
 """
 
 # =====================
-# 템플릿들 (체크박스 선택형) — QR 고정 공통 적용
+# 템플릿들 (체크박스 선택형)
+#  - 요구사항: 결과 화면 외에는 QR 숨김
 # =====================
 AMOUNT_START_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>총량 입력</title>{STYLE}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1>총량 입력</h1>
     <form method=post action="{{{{ url_for('top') }}}}">
@@ -187,7 +187,6 @@ AMOUNT_START_HTML = f"""
 TOP_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>Top 선택</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1>Top 선택</h1>
     <div class="toolbar">
@@ -219,7 +218,6 @@ TOP_HTML = f"""
 MIDDLE_FLORAL_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>Middle–Floral</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1>Middle – Floral</h1>
     <div class="toolbar">
@@ -252,7 +250,6 @@ MIDDLE_FLORAL_HTML = f"""
 MIDDLE_HERB_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>Middle–Herb</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1>Middle – Herb</h1>
     <div class="toolbar">
@@ -286,7 +283,6 @@ MIDDLE_HERB_HTML = f"""
 BASE_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>Base 선택</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1>Base 선택</h1>
     <div class="toolbar">
@@ -318,14 +314,14 @@ BASE_HTML = f"""
 </body></html>
 """
 
-# (팩터/영문 숨김) 결과 템플릿
+# (팩터/영문 숨김) 결과 템플릿 + 방울 수(0.1ml=2방울)
 RESULT_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8><title>블렌딩 결과</title>{STYLE}</head>
 <body>
   <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
     <h1 style="text-align:center;">블렌딩 결과</h1>
-    <p class=muted style="text-align:center;">선택한 카드들의 블렌딩 비율을 기준으로 총량을 배분합니다.</p>
+    <p class=muted style="text-align:center;">선택한 카드들의 블렌딩 비율을 기준으로 총량을 배분합니다. (0.1ml = 2방울)</p>
 
     <table>
       <thead>
@@ -335,6 +331,7 @@ RESULT_HTML = f"""
           <th>카드</th>
           <th>비율(%)</th>
           <th>ml</th>
+          <th>방울 수</th>
         </tr>
       </thead>
       <tbody>
@@ -345,12 +342,14 @@ RESULT_HTML = f"""
           <td>{{{{row.name}}}}</td>
           <td>{{{{row.pct}}}}</td>
           <td>{{{{row.ml}}}}</td>
+          <td>{{{{row.drops}}}}</td>
         </tr>
         {{% endfor %}}
         <tr>
           <th colspan=3>합계</th>
           <th>100.0</th>
           <th>{{{{total_amount}}}}</th>
+          <th>{{{{total_drops}}}}</th>
         </tr>
       </tbody>
     </table>
@@ -381,17 +380,21 @@ def build_rows(total_amount, top_sel, floral_sel, herb_sel, base_sel):
     total_weight = sum(f for (_,_,f) in items) or 1
 
     rows = []
+    total_drops = 0
     for cat, name, factor in items:
         pct = round(factor * 100.0 / total_weight, 1)
         ml  = round(factor * total_amount / total_weight, 1)
+        drops = int(round(ml / 0.1 * 2))  # 0.1ml = 2방울 → 1ml = 20방울
+        total_drops += drops
         rows.append({
             "category": cat,
             "name": name,
             "img": IMAGES[name],
             "pct": pct,
             "ml": ml,
+            "drops": drops,
         })
-    return rows
+    return rows, total_drops
 
 # =====================
 # 라우트
@@ -451,8 +454,8 @@ def result():
     if len(base_selected) < 1:
         return redirect(url_for("base"))
 
-    rows = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
-    return render_template_string(RESULT_HTML, rows=rows, total_amount=round(total_amount,1))
+    rows, total_drops = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
+    return render_template_string(RESULT_HTML, rows=rows, total_amount=round(total_amount,1), total_drops=total_drops)
 
 @app.get("/qr.png")
 def qr_png():
