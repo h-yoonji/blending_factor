@@ -167,17 +167,17 @@ function validateChecked(form, groupName){
 """
 
 # =====================
-# 템플릿들 (체크박스 선택형)
-#  - 요구사항: 결과 화면 외에는 QR 숨김
+# 템플릿들 (모든 페이지 <title> 통일)
 # =====================
 AMOUNT_START_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>총량 입력</title>{STYLE}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}</head>
 <body>
   <div class=wrap>
     <h1>총량 입력</h1>
     <form method=post action="{{{{ url_for('top') }}}}">
       <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-      <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 3.0"> ml
+      <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 10.0"> ml
       <p style="margin-top:12px;"><button class=btn type=submit>다음 (Top 선택)</button></p>
     </form>
   </div>
@@ -185,7 +185,8 @@ AMOUNT_START_HTML = f"""
 """
 
 TOP_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Top 선택</title>{STYLE}{COMMON_SCRIPTS}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
   <div class=wrap>
     <h1>Top 선택</h1>
@@ -216,7 +217,8 @@ TOP_HTML = f"""
 """
 
 MIDDLE_FLORAL_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Middle–Floral</title>{STYLE}{COMMON_SCRIPTS}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
   <div class=wrap>
     <h1>Middle – Floral</h1>
@@ -248,7 +250,8 @@ MIDDLE_FLORAL_HTML = f"""
 """
 
 MIDDLE_HERB_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Middle–Herb</title>{STYLE}{COMMON_SCRIPTS}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
   <div class=wrap>
     <h1>Middle – Herb</h1>
@@ -281,7 +284,8 @@ MIDDLE_HERB_HTML = f"""
 """
 
 BASE_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>Base 선택</title>{STYLE}{COMMON_SCRIPTS}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
 <body>
   <div class=wrap>
     <h1>Base 선택</h1>
@@ -316,7 +320,8 @@ BASE_HTML = f"""
 
 # (팩터/영문 숨김) 결과 템플릿 + 방울 수(0.1ml=2방울)
 RESULT_HTML = f"""
-<!doctype html><html lang=ko><head><meta charset=utf-8><title>블렌딩 결과</title>{STYLE}</head>
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}</head>
 <body>
   <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
