@@ -53,7 +53,7 @@ STYLE = """
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: system-ui, Apple SD Gothic Neo, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif;
-      margin: 4px; padding: 0; color: var(--fg); background:#fff;   /* 좌우 여백 절반 */
+      margin: 4px; padding: 0; color: var(--fg); background:#fff;
       font-size: 19px; line-height: 1.55;
     }
     .wrap { max-width: 480px; margin: 0 auto; padding: 0 2px; }
@@ -72,12 +72,19 @@ STYLE = """
     }
     .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
 
-    /* 총량 입력: 세로로 두툼 */
+    /* 총량 입력: 세로로 두툼 + 단위(ml) 내부 배치 */
+    .amount-input { position: relative; display: inline-block; width: 100%; }
     .amount-box {
       font-size: 28px; font-weight: 800; text-align: center;
       width: 100%; height: 64px; border: 2px solid var(--sel); border-radius: 12px;
-      padding: 8px 12px; background:#fff;
+      padding: 8px 48px 8px 12px; background:#fff; /* 오른쪽 여백 확보 */
     }
+    .unit-inside {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: #166534; font-size: 18px; font-weight: 800;
+      pointer-events: none;
+    }
+
     .btn {
       font-size: 22px; padding: 16px 20px; border-radius: 12px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
@@ -177,7 +184,10 @@ AMOUNT_START_HTML = f"""
     <h1>총량 입력</h1>
     <form method=post action="{{{{ url_for('top') }}}}">
       <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-      <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 10.0"> ml
+      <div class="amount-input">
+        <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 3.0">
+        <span class="unit-inside">ml</span>
+      </div>
       <p style="margin-top:12px;"><button class=btn type=submit>다음 (Top 선택)</button></p>
     </form>
   </div>
