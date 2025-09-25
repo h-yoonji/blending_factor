@@ -61,7 +61,7 @@ STYLE = """
       max-width: 1000px;
       margin: 0 auto;
       padding: 10px 5px 5px;
-      min-height: 300dvh;
+      min-height: 500dvh;
       display: flex; flex-direction: column; gap: 14px;
     }
 
@@ -92,7 +92,7 @@ STYLE = """
     .chip:active { transform: scale(.98); }
 
     .btn {
-      font-size: 26px; padding: 20px 22px; border-radius: 14px;
+      font-size: 26px; padding: 30px 40px; border-radius: 14px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
     }
 
