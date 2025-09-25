@@ -58,10 +58,10 @@ STYLE = """
     }
 
     .wrap {
-      max-width: 300px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 10px 5px 5px;
-      min-height: 100dvh;
+      min-height: 300dvh;
       display: flex; flex-direction: column; gap: 14px;
     }
 
