@@ -1,15 +1,15 @@
-from flask import Flask, request, render_template_string, send_file, redirect, url_for
+from flask import Flask, request, render_template_string, send_file
 import qrcode, io, os
 
 app = Flask(__name__)
 
 # =====================
-# 데이터: 블렌딩 팩터 (총 16개)
+# 데이터 (총 16개)
 # =====================
-TOP = {"레몬": 6, "스윗오렌지": 7, "버가못": 7, "그린애플": 0.5}
+TOP = {"레몬": 6, "스윗오렌지": 7, "버가못": 7, "그린애플": 1}
 MIDDLE_FLORAL = {"로즈제라늄": 3, "일랑일랑": 4, "네롤리": 3, "로즈": 1.5}
-MIDDLE_HERB = {"라벤더": 7, "로즈마리": 4, "클라리세이지": 3, "스피어민트": 3}
-BASE = {"로즈우드": 5, "시더우드": 6, "패출리": 4, "통카빈": 1}
+MIDDLE_HERB   = {"라벤더": 7, "로즈마리": 4, "클라리세이지": 3, "스피어민트": 3}
+BASE          = {"로즈우드": 5, "시더우드": 6, "패출리": 4, "통카빈": 1}
 
 EN_LABEL = {
     "레몬": "Lemon", "스윗오렌지": "Sweet Orange", "버가못": "Bergamot", "그린애플": "Green Apple",
@@ -42,7 +42,7 @@ IMAGES = {
 }
 
 # =====================
-# 스타일 (모바일 2열, 1:1 이미지, 선택 반전)
+# 스타일 (일반 문자열)
 # =====================
 STYLE = """
   <style>
@@ -53,45 +53,54 @@ STYLE = """
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: system-ui, Apple SD Gothic Neo, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif;
-      margin: 4px; padding: 0; color: var(--fg); background:#fff;
+      margin: 0; padding: 0; color: var(--fg); background:#fff;
       font-size: 19px; line-height: 1.55;
     }
-    .wrap { max-width: 480px; margin: 0 auto; padding: 0 2px; }
-    h1 { font-size: 30px; margin: 6px 0 8px; text-align:center; }
+
+    .wrap {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 10px 5px 5px;
+      min-height: 100dvh;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    h1 { font-size: 30px; margin: 2px 0 6px; text-align:center; }
     .muted { color: var(--muted); font-size: 16px; text-align:center; }
 
-    /* (결과에서만) 우상단 고정 QR */
-    .qr-fixed {
-      position: fixed; top: 10px; right: 10px; width: 90px; height: 90px; z-index: 1000;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg);
+    .hero {
+      border: 2px solid var(--bd); border-radius: 16px; background: var(--bg);
+      padding: 16px 14px 18px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
     }
-    .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
 
-    /* 총량 입력 (세로로 두툼, 단위 내부) */
-    .amount-input { position: relative; display: inline-block; width: 100%; }
+    .amount-input { position: relative; width: 100%; margin-top: 8px; }
     .amount-box {
       font-size: 28px; font-weight: 800; text-align: center;
-      width: 100%; height: 64px; border: 2px solid var(--sel); border-radius: 12px;
-      padding: 8px 48px 8px 12px; background:#fff;
+      width: 100%; height: 68px; border: 2px solid var(--sel); border-radius: 14px;
+      padding: 10px 60px 10px 14px; background:#fff;
     }
     .unit-inside {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
       color: #166534; font-size: 18px; font-weight: 800; pointer-events: none;
     }
 
+    .chips { display:flex; gap:10px; justify-content: center; margin: 12px 0 4px; flex-wrap: wrap; }
+    .chip {
+      border: 1.5px solid #b7efc5; background:#eaffef; color:#065f46;
+      padding: 8px 12px; border-radius: 999px; font-weight: 800; font-size: 15px;
+    }
+    .chip:active { transform: scale(.98); }
+
     .btn {
-      font-size: 22px; padding: 16px 20px; border-radius: 12px;
+      font-size: 22px; padding: 18px 20px; border-radius: 14px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
     }
 
     .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 4px; gap:10px; }
     .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:6px 10px; border-radius:999px; font-size:12px; }
 
-    /* 모바일 2열 */
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
 
-    /* 카드 */
     .card {
       position: relative; border: 2px solid var(--bd); border-radius: 14px;
       padding: 10px 10px 70px; background:#ffffff;
@@ -123,75 +132,98 @@ STYLE = """
     .card:has(input[type="checkbox"]:checked) .thumb { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.08); }
     .card:has(input[type="checkbox"]:checked) .select-pill { background: rgba(255,255,255,.15); color:#fff; border-color: rgba(255,255,255,.6); }
 
-    /* 결과 표 */
     table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 18px; }
     th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 10px; }
     thead th { background:#f6fff6; text-align: center; }
     .t-thumb { width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid var(--bd); }
+
+    /* 결과 페이지만 QR 고정 */
+    .qr-fixed {
+      position: fixed; top: 10px; right: 10px; width: 90px; height: 90px; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg);
+    }
+    .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 """
 
-# JS: 카운트만 표시(검증/비활성화 없음)
+# =====================
+# 공통 스크립트 (선택 카운터/검증: 0개도 통과)
+# =====================
 COMMON_SCRIPTS = """
 <script>
-function setupSelection(groupName, counterId){
+function setupSelection(groupName, counterId) {
   const form = document.querySelector('form');
-  const boxes = form.querySelectorAll('input[name="'+groupName+'"]');
+  if (!form) return;
   const counter = document.getElementById(counterId);
-  function refresh(){
+  function refresh() {
     const checked = form.querySelectorAll('input[name="'+groupName+'"]:checked').length;
     if(counter) counter.textContent = checked;
   }
-  boxes.forEach(b => b.addEventListener('change', refresh));
+  form.querySelectorAll('input[name="'+groupName+'"]').forEach(b => b.addEventListener('change', refresh));
   refresh();
 }
-// 항상 true 반환(선택 0개도 통과)
-function validateChecked(){ return true; }
+// 0개 선택도 허용
+function validateChecked() { return true; }
+
+// 빠른 선택칩
+function pick(val) {
+  const inp = document.getElementById("total_amount");
+  if(inp) { inp.value = val; inp.focus(); }
+}
 </script>
 """
 
-CHECK_ICON = "✔"
-
 # =====================
-# 템플릿들 (모든 페이지 <title> 통일)
+# 템플릿 (일반 문자열, STYLE/JS는 |safe 로 삽입)
 # =====================
-AMOUNT_START_HTML = f"""
+AMOUNT_START_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}
+</head>
 <body>
   <div class=wrap>
     <h1>총량 입력</h1>
-    <form method=post action="{{{{ url_for('top') }}}}">
-      <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-      <div class="amount-input">
-        <input class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 3.0">
-        <span class="unit-inside">ml</span>
-      </div>
-      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Top 선택)</button></p>
-    </form>
+    <div class="hero">
+      <form method=post action="{{ url_for('top') }}">
+        <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
+        <div class="amount-input">
+          <input id="total_amount" class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 3.0">
+          <span class="unit-inside">ml</span>
+        </div>
+        <div class="chips">
+          <button class="chip" type="button" onclick="pick(3.0)">3.0 ml</button>
+          <button class="chip" type="button" onclick="pick(4.5)">4.5 ml</button>
+          <button class="chip" type="button" onclick="pick(6.0)">6.0 ml</button>
+        </div>
+        <button class=btn type=submit>다음 (Top 선택)</button>
+      </form>
+    </div>
   </div>
 </body></html>
 """
 
-TOP_HTML = f"""
+TOP_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
 <body>
   <div class=wrap>
     <h1>Top 선택</h1>
     <div class="toolbar">
       <span class="count-badge">선택: <span id="cnt-top">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('middle_floral') }}}}" onsubmit="return validateChecked()">
-      <input type="hidden" name="total_amount" value="{{{{ total_amount }}}}">
+    <form method=post action="{{ url_for('middle_floral') }}" onsubmit="return validateChecked()">
+      <input type="hidden" name="total_amount" value="{{ total_amount }}">
       <div class=grid>
-        {{% for name in top_items.keys() %}}
+        {% for name in top_items.keys() %}
         <label class=card>
-          <input type="checkbox" name="top" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}" alt="{{{{name}}}}"></span>
-          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
+          <input type="checkbox" name="top" value="{{name}}">
+          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}" alt="{{name}}"></span>
+          <span class=name>{{name}}</span>
+          <span class=en>{{ en[name] }}</span>
+          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
         </label>
-        {{% endfor %}}
+        {% endfor %}
       </div>
       <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Floral)</button></p>
     </form>
@@ -200,26 +232,28 @@ TOP_HTML = f"""
 </body></html>
 """
 
-MIDDLE_FLORAL_HTML = f"""
+MIDDLE_FLORAL_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
 <body>
   <div class=wrap>
     <h1>Middle – Floral</h1>
     <div class="toolbar">
       <span class="count-badge">선택: <span id="cnt-floral">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('middle_herb') }}}}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
-      {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
+    <form method=post action="{{ url_for('middle_herb') }}" onsubmit="return validateChecked()">
+      <input type=hidden name=total_amount value="{{ total_amount }}">
+      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
       <div class=grid>
-        {{% for name in floral.keys() %}}
+        {% for name in floral.keys() %}
         <label class=card>
-          <input type="checkbox" name="floral" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
+          <input type="checkbox" name="floral" value="{{name}}">
+          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
+          <span class=name>{{name}}</span>
+          <span class=en>{{ en[name] }}</span>
+          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
         </label>
-        {{% endfor %}}
+        {% endfor %}
       </div>
       <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Herb)</button></p>
     </form>
@@ -228,27 +262,29 @@ MIDDLE_FLORAL_HTML = f"""
 </body></html>
 """
 
-MIDDLE_HERB_HTML = f"""
+MIDDLE_HERB_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
 <body>
   <div class=wrap>
     <h1>Middle – Herb</h1>
     <div class="toolbar">
       <span class="count-badge">선택: <span id="cnt-herb">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('base') }}}}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
-      {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
-      {{% for f in floral_selected %}}<input type=hidden name="floral" value="{{{{f}}}}">{{% endfor %}}
+    <form method=post action="{{ url_for('base') }}" onsubmit="return validateChecked()">
+      <input type=hidden name=total_amount value="{{ total_amount }}">
+      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
+      {% for f in floral_selected %}<input type=hidden name="floral" value="{{f}}">{% endfor %}
       <div class=grid>
-        {{% for name in herb.keys() %}}
+        {% for name in herb.keys() %}
         <label class=card>
-          <input type="checkbox" name="herb" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
+          <input type="checkbox" name="herb" value="{{name}}">
+          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
+          <span class=name>{{name}}</span>
+          <span class=en>{{ en[name] }}</span>
+          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
         </label>
-        {{% endfor %}}
+        {% endfor %}
       </div>
       <p style="margin-top:12px;"><button class=btn type=submit>다음 (Base)</button></p>
     </form>
@@ -257,28 +293,30 @@ MIDDLE_HERB_HTML = f"""
 </body></html>
 """
 
-BASE_HTML = f"""
+BASE_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}{COMMON_SCRIPTS}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
 <body>
   <div class=wrap>
     <h1>Base 선택</h1>
     <div class="toolbar">
       <span class="count-badge">선택: <span id="cnt-base">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('result') }}}}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
-      {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
-      {{% for f in floral_selected %}}<input type=hidden name="floral" value="{{{{f}}}}">{{% endfor %}}
-      {{% for h in herb_selected %}}<input type=hidden name="herb" value="{{{{h}}}}">{{% endfor %}}
+    <form method=post action="{{ url_for('result') }}" onsubmit="return validateChecked()">
+      <input type=hidden name=total_amount value="{{ total_amount }}">
+      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
+      {% for f in floral_selected %}<input type=hidden name="floral" value="{{f}}">{% endfor %}
+      {% for h in herb_selected %}<input type=hidden name="herb" value="{{h}}">{% endfor %}
       <div class=grid>
-        {{% for name in base_items.keys() %}}
+        {% for name in base_items.keys() %}
         <label class=card>
-          <input type="checkbox" name="base" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
-          <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
+          <input type="checkbox" name="base" value="{{name}}">
+          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
+          <span class=name>{{name}}</span>
+          <span class=en>{{ en[name] }}</span>
+          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
         </label>
-        {{% endfor %}}
+        {% endfor %}
       </div>
       <p style="margin-top:12px;"><button class=btn type=submit>결과 보기</button></p>
     </form>
@@ -287,12 +325,11 @@ BASE_HTML = f"""
 </body></html>
 """
 
-# 결과: 팩터/영문 숨김 + ml(소수점1) + 방울수(0.1ml=2방울) + QR
-RESULT_HTML = f"""
+RESULT_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}</head>
+<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}</head>
 <body>
-  <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
+  <div class="qr-fixed"><img src="{{ url_for('qr_png') }}" alt="QR"></div>
   <div class=wrap>
     <h1>블렌딩 결과</h1>
     <p class=muted>선택한 카드들의 블렌딩 비율로 총량을 배분합니다. (0.1ml = 2방울)</p>
@@ -308,26 +345,26 @@ RESULT_HTML = f"""
         </tr>
       </thead>
       <tbody>
-        {{% for row in rows %}}
+        {% for row in rows %}
         <tr>
-          <td>{{{{row.category}}}}</td>
-          <td><img class="t-thumb" src="{{{{ url_for('static', filename=row.img) }}}}"></td>
-          <td>{{{{row.name}}}}</td>
-          <td>{{{{row.pct}}}}</td>
-          <td>{{{{row.ml}}}}</td>
-          <td>{{{{row.drops}}}}</td>
+          <td>{{row.category}}</td>
+          <td><img class="t-thumb" src="{{ url_for('static', filename=row.img) }}"></td>
+          <td>{{row.name}}</td>
+          <td>{{row.pct}}</td>
+          <td>{{row.ml}}</td>
+          <td>{{row.drops}}</td>
         </tr>
-        {{% endfor %}}
+        {% endfor %}
         <tr>
           <th colspan=3>합계</th>
           <th>100.0</th>
-          <th>{{{{total_amount}}}}</th>
-          <th>{{{{total_drops}}}}</th>
+          <th>{{total_amount}}</th>
+          <th>{{total_drops}}</th>
         </tr>
       </tbody>
     </table>
     <p style="margin-top:12px; text-align:center;">
-      <a class=btn href="{{{{ url_for('index') }}}}">처음부터 다시</a>
+      <a class=btn href="{{ url_for('index') }}">처음부터 다시</a>
     </p>
   </div>
 </body></html>
@@ -346,13 +383,12 @@ def build_rows(total_amount, top_sel, floral_sel, herb_sel, base_sel):
     for n in floral_sel: items.append(("Middle–Floral", n, MIDDLE_FLORAL[n]))
     for n in herb_sel:   items.append(("Middle–Herb", n, MIDDLE_HERB[n]))
     for n in base_sel:   items.append(("Base", n, BASE[n]))
-
     total_weight = sum(f for *_, f in items) or 1
 
     rows, total_drops = [], 0
     for cat, name, factor in items:
-        pct = round(factor * 100.0 / total_weight, 1)
-        ml  = round(factor * total_amount / total_weight, 1)
+        pct   = round(factor * 100.0 / total_weight, 1)
+        ml    = round(factor * total_amount / total_weight, 1)
         drops = int(round(ml / 0.1 * 2))  # 0.1ml = 2방울
         total_drops += drops
         rows.append({"category": cat, "name": name, "img": IMAGES[name], "pct": pct, "ml": ml, "drops": drops})
@@ -363,51 +399,70 @@ def build_rows(total_amount, top_sel, floral_sel, herb_sel, base_sel):
 # =====================
 @app.get("/")
 def index():
-    return render_template_string(AMOUNT_START_HTML)
+    return render_template_string(AMOUNT_START_HTML, STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS)
 
 @app.post("/top")
 def top():
     total_amount = float(request.form.get("total_amount", 0))
-    return render_template_string(TOP_HTML, top_items=TOP, images=IMAGES, en=EN_LABEL, total_amount=round(total_amount,1))
+    return render_template_string(
+        TOP_HTML,
+        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
+        top_items=TOP, images=IMAGES, en=EN_LABEL,
+        total_amount=round(total_amount,1)
+    )
 
 @app.post("/middle_floral")
 def middle_floral():
-    total_amount = float(request.form.get("total_amount", 0))
-    top_selected = get_checked_list("top", TOP)
-    return render_template_string(MIDDLE_FLORAL_HTML,
-                                  floral=MIDDLE_FLORAL, images=IMAGES, en=EN_LABEL,
-                                  total_amount=round(total_amount,1), top_selected=top_selected)
+    total_amount   = float(request.form.get("total_amount", 0))
+    top_selected   = get_checked_list("top", TOP)  # 0개 허용
+    return render_template_string(
+        MIDDLE_FLORAL_HTML,
+        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
+        floral=MIDDLE_FLORAL, images=IMAGES, en=EN_LABEL,
+        total_amount=round(total_amount,1), top_selected=top_selected
+    )
 
 @app.post("/middle_herb")
 def middle_herb():
-    total_amount = float(request.form.get("total_amount", 0))
-    top_selected = get_checked_list("top", TOP)
-    floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
-    return render_template_string(MIDDLE_HERB_HTML,
-                                  herb=MIDDLE_HERB, images=IMAGES, en=EN_LABEL,
-                                  total_amount=round(total_amount,1),
-                                  top_selected=top_selected, floral_selected=floral_selected)
+    total_amount   = float(request.form.get("total_amount", 0))
+    top_selected   = get_checked_list("top", TOP)
+    floral_selected= get_checked_list("floral", MIDDLE_FLORAL)  # 0개 허용
+    return render_template_string(
+        MIDDLE_HERB_HTML,
+        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
+        herb=MIDDLE_HERB, images=IMAGES, en=EN_LABEL,
+        total_amount=round(total_amount,1),
+        top_selected=top_selected, floral_selected=floral_selected
+    )
 
 @app.post("/base")
 def base():
-    total_amount = float(request.form.get("total_amount", 0))
-    top_selected = get_checked_list("top", TOP)
-    floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
-    herb_selected = get_checked_list("herb", MIDDLE_HERB)
-    return render_template_string(BASE_HTML,
-                                  base_items=BASE, images=IMAGES, en=EN_LABEL,
-                                  total_amount=round(total_amount,1),
-                                  top_selected=top_selected, floral_selected=floral_selected, herb_selected=herb_selected)
+    total_amount   = float(request.form.get("total_amount", 0))
+    top_selected   = get_checked_list("top", TOP)
+    floral_selected= get_checked_list("floral", MIDDLE_FLORAL)
+    herb_selected  = get_checked_list("herb", MIDDLE_HERB)      # 0개 허용
+    return render_template_string(
+        BASE_HTML,
+        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
+        base_items=BASE, images=IMAGES, en=EN_LABEL,
+        total_amount=round(total_amount,1),
+        top_selected=top_selected, floral_selected=floral_selected, herb_selected=herb_selected
+    )
 
 @app.post("/result")
 def result():
-    total_amount = float(request.form.get("total_amount", 0))
+    total_amount   = float(request.form.get("total_amount", 0))
     top_selected    = get_checked_list("top", TOP)
     floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
     herb_selected   = get_checked_list("herb", MIDDLE_HERB)
     base_selected   = get_checked_list("base", BASE)
+    # 모두 0개일 수도 있음 → rows 비어도 합계/총량은 표기
     rows, total_drops = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
-    return render_template_string(RESULT_HTML, rows=rows, total_amount=round(total_amount,1), total_drops=total_drops)
+    return render_template_string(
+        RESULT_HTML,
+        STYLE=STYLE,
+        rows=rows, total_amount=round(total_amount,1), total_drops=total_drops
+    )
 
 @app.get("/qr.png")
 def qr_png():
