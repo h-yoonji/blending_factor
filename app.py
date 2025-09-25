@@ -70,10 +70,11 @@ STYLE = """
 
     .hero {
       border: 2px solid var(--bd); border-radius: 16px; background: var(--bg);
-      padding: 16px 14px 18px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
+      padding: 24px 20px 28px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
+      display:flex; flex-direction:column; gap:20px; /* 컨텐츠 간격 일정화 */
     }
 
-    .amount-input { position: relative; width: 100%; margin-top: 10px; }
+    .amount-input { position: relative; width: 100%; }
     .amount-box {
       font-size: 48px; font-weight: 800; text-align: center;
       width: 100%; height: 72px; border: 2px solid var(--sel); border-radius: 14px;
@@ -84,10 +85,23 @@ STYLE = """
       color: #166534; font-size: 20px; font-weight: 800; pointer-events: none;
     }
 
-    .chips { display:flex; gap:12px; justify-content: center; margin: 20px 0 20px; flex-wrap: wrap; }
-    .chip {
-      border: 2px solid #b7efc5; background:#eaffef; color:#065f46;
-      padding: 14px 20px; border-radius: 999px; font-weight: 800; font-size: 22px;
+    /* 칩 & 뱃지 전부 동일 크기 */
+    .chip,
+    .select-pill,
+    .count-badge {
+      border: 2px solid #b7efc5;
+      background:#eaffef;
+      color:#065f46;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 22px;
+      min-width: 120px;
+      text-align: center;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;   /* 위쪽 간격 */
     }
     .chip:active { transform: scale(.98); }
 
@@ -97,14 +111,12 @@ STYLE = """
     }
 
     .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 6px; gap:12px; }
-    .count-badge { background:#16a34a; color:#fff; font-weight:800;
-      padding: 12px 20px; border-radius:999px; font-size:20px; }
 
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
 
     .card {
       position: relative; border: 2px solid var(--bd); border-radius: 25px;
-      padding: 12px 12px 70px; background:#ffffff;
+      padding: 10px 10px 55px; background:#ffffff;
       transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
       text-align: left; user-select: none; -webkit-user-select: none;
       font-size: 20px;
@@ -119,15 +131,9 @@ STYLE = """
     .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
 
     .name { display:block; margin-top:4px; line-height:1.25; font-weight:900; font-size:30px; }
-    .en   { display:block; margin-top:2px; margin-bottom:6px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
+    .en   { display:block; margin-top:2px; margin-bottom:30px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
 
     .select-wrap { position:absolute; left:0; right:0; bottom:12px; display:flex; justify-content:center; }
-    .select-pill {
-      display:inline-flex; align-items:center; gap:6px; background: var(--pill); color:#065f46;
-      border:1px solid #b7efc5; padding:10px 14px; border-radius:999px; font-weight:800;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); font-size:18px;
-    }
-
     .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
     .card:has(input[type="checkbox"]:checked) { background: var(--sel); border-color: var(--sel); color: var(--white); box-shadow: 0 0 0 3px rgba(34,197,94,.25) inset; }
     .card:has(input[type="checkbox"]:checked) .en { color: #e6ffe6; }
@@ -148,6 +154,7 @@ STYLE = """
     .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 """
+
 
 
 
@@ -186,28 +193,29 @@ AMOUNT_START_HTML = """
 <title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}
 </head>
 <body>
-  <div class=wrap>
+  <div class="wrap">
     <h1>총량 입력</h1>
     <div class="hero">
-      <form method=post action="{{ url_for('top') }}">
-        <p class=muted>오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-        <div class="amount-input">
-          <input id="total_amount" class="amount-box" type=number name=total_amount step=0.1 min=0.1 required placeholder="예) 3.0">
+      <form method="post" action="{{ url_for('top') }}" style="display:flex; flex-direction:column; align-items:center; gap:28px;">
+        <p class="muted">오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
+        
+        <div class="amount-input" style="width:100%; max-width:480px;">
+          <input id="total_amount" class="amount-box" type="number" name="total_amount" step="0.1" min="0.1" required placeholder="예) 3.0">
           <span class="unit-inside">ml</span>
         </div>
+        
         <div class="chips">
           <button class="chip" type="button" onclick="pick(3.0)">3.0 ml</button>
           <button class="chip" type="button" onclick="pick(4.5)">4.5 ml</button>
           <button class="chip" type="button" onclick="pick(6.0)">6.0 ml</button>
         </div>
-        <!-- 버튼 위쪽 여백 추가 -->
-        <button class=btn type=submit style="margin-top:28px;">다음 (Top 선택)</button>
+        
+        <button class="btn" type="submit">다음 (Top 선택)</button>
       </form>
     </div>
   </div>
 </body></html>
 """
-
 
 TOP_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
