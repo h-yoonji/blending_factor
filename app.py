@@ -58,15 +58,15 @@ STYLE = """
     }
 
     .wrap {
-      max-width: 1000px;
+      max-width: 800px;
       margin: 0 auto;
       padding: 10px 5px 5px;
-      min-height: 500dvh;
+      min-height: 800dvh;
       display: flex; flex-direction: column; gap: 14px;
     }
 
     h1 { font-size: 50px; margin: 2px 0 10px; text-align:center; font-weight: 900; }
-    .muted { color: var(--muted); font-size: 19px; text-align:center; font-weight: 500; }
+    .muted { color: var(--muted); font-size: 25px; text-align:center; font-weight: 500; }
 
     .hero {
       border: 2px solid var(--bd); border-radius: 16px; background: var(--bg);
@@ -84,15 +84,15 @@ STYLE = """
       color: #166534; font-size: 20px; font-weight: 800; pointer-events: none;
     }
 
-    .chips { display:flex; gap:12px; justify-content: center; margin: 14px 0 10px; flex-wrap: wrap; }
+    .chips { display:flex; gap:12px; justify-content: center; margin: 20px 0 20px; flex-wrap: wrap; }
     .chip {
       border: 2px solid #b7efc5; background:#eaffef; color:#065f46;
-      padding: 10px 16px; border-radius: 999px; font-weight: 800; font-size: 18px;
+      padding: 14px 20px; border-radius: 999px; font-weight: 800; font-size: 22px;
     }
     .chip:active { transform: scale(.98); }
 
     .btn {
-      font-size: 26px; padding: 30px 40px; border-radius: 14px;
+      font-size: 25px; padding: 30px 40px; border-radius: 14px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
     }
 
