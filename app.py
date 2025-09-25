@@ -99,7 +99,7 @@ STYLE = """
       border-radius: 999px;
       font-weight: 800;
       font-size: 22px;
-      min-width: 120px;
+      min-width: 240px;
       text-align: center;
       display: inline-flex;
       justify-content: center;
@@ -134,7 +134,7 @@ STYLE = """
     .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
 
     .name { display:block; margin-top:4px; line-height:1.25; font-weight:900; font-size:30px; }
-    .en   { display:block; margin-top:2px; margin-bottom:30px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
+    .en   { display:block; margin-top:2px; margin-bottom:50px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
 
     .select-wrap { position:absolute; left:0; right:0; bottom:12px; display:flex; justify-content:center; }
     .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
@@ -228,7 +228,7 @@ TOP_HTML = """
   <div class=wrap>
     <h1>Top 선택</h1>
     <div class="toolbar">
-      <span class="count-badge">선택 : <span id="cnt-top">0</span></span>
+      <span class="count-badge">선택 :&nbsp;<span id="cnt-top">0</span></span>
     </div>
     <form method=post action="{{ url_for('middle_floral') }}" onsubmit="return validateChecked()">
       <input type="hidden" name="total_amount" value="{{ total_amount }}">
@@ -257,7 +257,7 @@ MIDDLE_FLORAL_HTML = """
   <div class=wrap>
     <h1>Middle – Floral</h1>
     <div class="toolbar">
-      <span class="count-badge">선택: <span id="cnt-floral">0</span></span>
+      <span class="count-badge">선택 :&nbsp;<span id="cnt-floral">0</span></span>
     </div>
     <form method=post action="{{ url_for('middle_herb') }}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{ total_amount }}">
@@ -287,7 +287,7 @@ MIDDLE_HERB_HTML = """
   <div class=wrap>
     <h1>Middle – Herb</h1>
     <div class="toolbar">
-      <span class="count-badge">선택: <span id="cnt-herb">0</span></span>
+      <span class="count-badge">선택 :&nbsp;<span id="cnt-herb">0</span></span>
     </div>
     <form method=post action="{{ url_for('base') }}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{ total_amount }}">
@@ -318,7 +318,7 @@ BASE_HTML = """
   <div class=wrap>
     <h1>Base 선택</h1>
     <div class="toolbar">
-      <span class="count-badge">선택: <span id="cnt-base">0</span></span>
+      <span class="count-badge">선택 :&nbsp;<span id="cnt-base">0</span></span>
     </div>
     <form method=post action="{{ url_for('result') }}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{ total_amount }}">
