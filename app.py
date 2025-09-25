@@ -97,7 +97,9 @@ STYLE = """
     }
 
     .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 6px; gap:12px; }
-    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:8px 12px; border-radius:999px; font-size:14px; }
+
+    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:10px 16px; border-radius:999px; font-size:20px; }
+
 
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 14px; }
 
@@ -116,8 +118,8 @@ STYLE = """
     }
     .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
 
-    .name { display:block; margin-top:4px; line-height:1.3; font-weight:900; font-size:22px; }
-    .en   { display:block; margin-top:2px; margin-bottom:8px; line-height:1.2; font-size:14px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
+    .name { display:block; margin-top:4px; line-height:1.3; font-weight:900; font-size:30px; }
+    .en   { display:block; margin-top:2px; margin-bottom:8px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
 
     .select-wrap { position:absolute; left:0; right:0; bottom:12px; display:flex; justify-content:center; }
     .select-pill {
