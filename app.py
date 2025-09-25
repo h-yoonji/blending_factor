@@ -58,7 +58,7 @@ STYLE = """
     }
 
     .wrap {
-      max-width: 420px;
+      max-width: 300px;
       margin: 0 auto;
       padding: 10px 5px 5px;
       min-height: 100dvh;
@@ -196,12 +196,14 @@ AMOUNT_START_HTML = """
           <button class="chip" type="button" onclick="pick(4.5)">4.5 ml</button>
           <button class="chip" type="button" onclick="pick(6.0)">6.0 ml</button>
         </div>
-        <button class=btn type=submit>다음 (Top 선택)</button>
+        <!-- 버튼 위쪽 여백 추가 -->
+        <button class=btn type=submit style="margin-top:28px;">다음 (Top 선택)</button>
       </form>
     </div>
   </div>
 </body></html>
 """
+
 
 TOP_HTML = """
 <!doctype html><html lang=ko><head><meta charset=utf-8>
