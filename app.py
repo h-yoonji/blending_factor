@@ -4,7 +4,7 @@ import qrcode, io, os
 app = Flask(__name__)
 
 # =====================
-# 데이터: 블렌딩 팩터
+# 데이터: 블렌딩 팩터 (총 16개)
 # =====================
 TOP = {"레몬": 6, "스윗오렌지": 7, "버가못": 7, "그린애플": 0.5}
 MIDDLE_FLORAL = {"로즈제라늄": 3, "일랑일랑": 4, "네롤리": 3, "로즈": 1.5}
@@ -42,12 +42,12 @@ IMAGES = {
 }
 
 # =====================
-# 스타일 (모바일 2열, 좌우 여백 절반)
+# 스타일 (모바일 2열, 1:1 이미지, 선택 반전)
 # =====================
 STYLE = """
   <style>
     :root {
-      --fg:#0b3d1b; --muted:#4f665c; --bd:#cceccc; --sel:#166534; --sel-weak:#22c55e;
+      --fg:#0b3d1b; --muted:#4f665c; --bd:#cceccc; --sel:#166534;
       --bg:#f6fff6; --pill:#eaffef; --white:#ffffff;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -57,47 +57,41 @@ STYLE = """
       font-size: 19px; line-height: 1.55;
     }
     .wrap { max-width: 480px; margin: 0 auto; padding: 0 2px; }
+    h1 { font-size: 30px; margin: 6px 0 8px; text-align:center; }
+    .muted { color: var(--muted); font-size: 16px; text-align:center; }
 
-    h1 { font-size: 30px; margin: 6px 0 8px; }
-    .muted { color: var(--muted); font-size: 16px; }
-
-    /* (결과 화면에서만 사용) 항상 우상단 고정 QR */
+    /* (결과에서만) 우상단 고정 QR */
     .qr-fixed {
-      position: fixed;
-      top: 10px; right: 10px;
-      width: 90px; height: 90px;
-      z-index: 1000;
+      position: fixed; top: 10px; right: 10px; width: 90px; height: 90px; z-index: 1000;
       display: flex; align-items: center; justify-content: center;
       border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg);
     }
     .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
 
-    /* 총량 입력: 세로로 두툼 + 단위(ml) 내부 배치 */
+    /* 총량 입력 (세로로 두툼, 단위 내부) */
     .amount-input { position: relative; display: inline-block; width: 100%; }
     .amount-box {
       font-size: 28px; font-weight: 800; text-align: center;
       width: 100%; height: 64px; border: 2px solid var(--sel); border-radius: 12px;
-      padding: 8px 48px 8px 12px; background:#fff; /* 오른쪽 여백 확보 */
+      padding: 8px 48px 8px 12px; background:#fff;
     }
     .unit-inside {
       position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      color: #166534; font-size: 18px; font-weight: 800;
-      pointer-events: none;
+      color: #166534; font-size: 18px; font-weight: 800; pointer-events: none;
     }
 
     .btn {
       font-size: 22px; padding: 16px 20px; border-radius: 12px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
     }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
 
-    .toolbar { display:flex; justify-content: space-between; align-items:center; margin-top: 4px; }
+    .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 4px; gap:10px; }
     .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:6px 10px; border-radius:999px; font-size:12px; }
 
     /* 모바일 2열 */
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
 
-    /* 카드: 전체 클릭 가능, 선택 시 진초록 반전 */
+    /* 카드 */
     .card {
       position: relative; border: 2px solid var(--bd); border-radius: 14px;
       padding: 10px 10px 70px; background:#ffffff;
@@ -122,7 +116,6 @@ STYLE = """
       border:1px solid #b7efc5; padding:8px 12px; border-radius:999px; font-weight:800;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
     }
-    .select-pill svg { width:18px; height:18px; }
 
     .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
     .card:has(input[type="checkbox"]:checked) { background: var(--sel); border-color: var(--sel); color: var(--white); box-shadow: 0 0 0 3px rgba(34,197,94,.25) inset; }
@@ -138,40 +131,26 @@ STYLE = """
   </style>
 """
 
-CHECK_ICON = """
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-"""
-
-# 공통 JS: 선택 개수 카운터 & 버튼 활성화
+# JS: 카운트만 표시(검증/비활성화 없음)
 COMMON_SCRIPTS = """
 <script>
-function setupSelection(groupName, counterId, submitId){
+function setupSelection(groupName, counterId){
   const form = document.querySelector('form');
   const boxes = form.querySelectorAll('input[name="'+groupName+'"]');
   const counter = document.getElementById(counterId);
-  const submit = document.getElementById(submitId);
-
   function refresh(){
     const checked = form.querySelectorAll('input[name="'+groupName+'"]:checked').length;
     if(counter) counter.textContent = checked;
-    if(submit) submit.disabled = (checked < 1);
   }
   boxes.forEach(b => b.addEventListener('change', refresh));
   refresh();
 }
-
-function validateChecked(form, groupName){
-  const boxes = form.querySelectorAll('input[name="'+groupName+'"]:checked');
-  if(boxes.length < 1){
-    alert("최소 1개 이상 선택해 주세요.");
-    return false;
-  }
-  return true;
-}
+// 항상 true 반환(선택 0개도 통과)
+function validateChecked(){ return true; }
 </script>
 """
+
+CHECK_ICON = "✔"
 
 # =====================
 # 템플릿들 (모든 페이지 <title> 통일)
@@ -201,27 +180,22 @@ TOP_HTML = f"""
   <div class=wrap>
     <h1>Top 선택</h1>
     <div class="toolbar">
-      <p class=muted>Top에서 최소 1개 이상 선택</p>
       <span class="count-badge">선택: <span id="cnt-top">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('middle_floral') }}}}" onsubmit="return validateChecked(this,'top')">
+    <form method=post action="{{{{ url_for('middle_floral') }}}}" onsubmit="return validateChecked()">
       <input type="hidden" name="total_amount" value="{{{{ total_amount }}}}">
       <div class=grid>
         {{% for name in top_items.keys() %}}
         <label class=card>
-          <input type="checkbox" name="top" value="{{{{name}}}}">
-          <span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}" alt="{{{{name}}}}"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
+          <input type="checkbox" name="top" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}" alt="{{{{name}}}}"></span>
+          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
           <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
         </label>
         {{% endfor %}}
       </div>
-      <p style="margin-top:12px;">
-        <button id="btn-next-top" class=btn type=submit disabled>다음 (Middle–Floral)</button>
-      </p>
+      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Floral)</button></p>
     </form>
-    <script>setupSelection('top','cnt-top','btn-next-top');</script>
+    <script>setupSelection('top','cnt-top');</script>
   </div>
 </body></html>
 """
@@ -233,28 +207,23 @@ MIDDLE_FLORAL_HTML = f"""
   <div class=wrap>
     <h1>Middle – Floral</h1>
     <div class="toolbar">
-      <p class=muted>Floral에서 최소 1개 이상 선택</p>
       <span class="count-badge">선택: <span id="cnt-floral">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('middle_herb') }}}}" onsubmit="return validateChecked(this,'floral')">
+    <form method=post action="{{{{ url_for('middle_herb') }}}}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
       {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
       <div class=grid>
         {{% for name in floral.keys() %}}
         <label class=card>
-          <input type="checkbox" name="floral" value="{{{{name}}}}">
-          <span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
+          <input type="checkbox" name="floral" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
+          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
           <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
         </label>
         {{% endfor %}}
       </div>
-      <p style="margin-top:12px;">
-        <button id="btn-next-floral" class=btn type=submit disabled>다음 (Middle–Herb)</button>
-      </p>
+      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Herb)</button></p>
     </form>
-    <script>setupSelection('floral','cnt-floral','btn-next-floral');</script>
+    <script>setupSelection('floral','cnt-floral');</script>
   </div>
 </body></html>
 """
@@ -266,29 +235,24 @@ MIDDLE_HERB_HTML = f"""
   <div class=wrap>
     <h1>Middle – Herb</h1>
     <div class="toolbar">
-      <p class=muted>Herb에서 최소 1개 이상 선택</p>
       <span class="count-badge">선택: <span id="cnt-herb">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('base') }}}}" onsubmit="return validateChecked(this,'herb')">
+    <form method=post action="{{{{ url_for('base') }}}}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
       {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
       {{% for f in floral_selected %}}<input type=hidden name="floral" value="{{{{f}}}}">{{% endfor %}}
       <div class=grid>
         {{% for name in herb.keys() %}}
         <label class=card>
-          <input type="checkbox" name="herb" value="{{{{name}}}}">
-          <span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
+          <input type="checkbox" name="herb" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
+          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
           <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
         </label>
         {{% endfor %}}
       </div>
-      <p style="margin-top:12px;">
-        <button id="btn-next-herb" class=btn type=submit disabled>다음 (Base)</button>
-      </p>
+      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Base)</button></p>
     </form>
-    <script>setupSelection('herb','cnt-herb','btn-next-herb');</script>
+    <script>setupSelection('herb','cnt-herb');</script>
   </div>
 </body></html>
 """
@@ -300,10 +264,9 @@ BASE_HTML = f"""
   <div class=wrap>
     <h1>Base 선택</h1>
     <div class="toolbar">
-      <p class=muted>Base에서 최소 1개 이상 선택</p>
       <span class="count-badge">선택: <span id="cnt-base">0</span></span>
     </div>
-    <form method=post action="{{{{ url_for('result') }}}}" onsubmit="return validateChecked(this,'base')">
+    <form method=post action="{{{{ url_for('result') }}}}" onsubmit="return validateChecked()">
       <input type=hidden name=total_amount value="{{{{ total_amount }}}}">
       {{% for t in top_selected %}}<input type=hidden name="top" value="{{{{t}}}}">{{% endfor %}}
       {{% for f in floral_selected %}}<input type=hidden name="floral" value="{{{{f}}}}">{{% endfor %}}
@@ -311,33 +274,28 @@ BASE_HTML = f"""
       <div class=grid>
         {{% for name in base_items.keys() %}}
         <label class=card>
-          <input type="checkbox" name="base" value="{{{{name}}}}">
-          <span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
-          <span class=name>{{{{name}}}}</span>
-          <span class=en>{{{{ en[name] }}}}</span>
+          <input type="checkbox" name="base" value="{{{{name}}}}"><span class=thumb><img src="{{{{ url_for('static', filename=images.get(name)) }}}}"></span>
+          <span class=name>{{{{name}}}}</span><span class=en>{{{{ en[name] }}}}</span>
           <div class=select-wrap><span class=select-pill>{CHECK_ICON} 선택</span></div>
         </label>
         {{% endfor %}}
       </div>
-      <p style="margin-top:12px;">
-        <button id="btn-next-base" class=btn type=submit disabled>결과 보기</button>
-      </p>
+      <p style="margin-top:12px;"><button class=btn type=submit>결과 보기</button></p>
     </form>
-    <script>setupSelection('base','cnt-base','btn-next-base');</script>
+    <script>setupSelection('base','cnt-base');</script>
   </div>
 </body></html>
 """
 
-# (팩터/영문 숨김) 결과 템플릿 + 방울 수(0.1ml=2방울)
+# 결과: 팩터/영문 숨김 + ml(소수점1) + 방울수(0.1ml=2방울) + QR
 RESULT_HTML = f"""
 <!doctype html><html lang=ko><head><meta charset=utf-8>
 <title>에센셜 오일 부향률 계산 프로그램</title>{STYLE}</head>
 <body>
   <div class="qr-fixed"><img src="{{{{ url_for('qr_png') }}}}" alt="QR"></div>
   <div class=wrap>
-    <h1 style="text-align:center;">블렌딩 결과</h1>
-    <p class=muted style="text-align:center;">선택한 카드들의 블렌딩 비율을 기준으로 총량을 배분합니다. (0.1ml = 2방울)</p>
-
+    <h1>블렌딩 결과</h1>
+    <p class=muted>선택한 카드들의 블렌딩 비율로 총량을 배분합니다. (0.1ml = 2방울)</p>
     <table>
       <thead>
         <tr>
@@ -368,7 +326,6 @@ RESULT_HTML = f"""
         </tr>
       </tbody>
     </table>
-
     <p style="margin-top:12px; text-align:center;">
       <a class=btn href="{{{{ url_for('index') }}}}">처음부터 다시</a>
     </p>
@@ -380,35 +337,25 @@ RESULT_HTML = f"""
 # 유틸
 # =====================
 def get_checked_list(param_name: str, allowed: dict):
-    """체크박스로 넘어온 값 목록(문자열)을 허용 키로 필터링."""
     vals = request.form.getlist(param_name)
     return [v for v in vals if v in allowed]
 
 def build_rows(total_amount, top_sel, floral_sel, herb_sel, base_sel):
-    """결과 테이블 행 구성 (팩터·영문은 화면에 표시하지 않음)."""
-    items = []  # (category, name, factor)
-    for name in top_sel:    items.append(("Top", name, TOP[name]))
-    for name in floral_sel: items.append(("Middle–Floral", name, MIDDLE_FLORAL[name]))
-    for name in herb_sel:   items.append(("Middle–Herb", name, MIDDLE_HERB[name]))
-    for name in base_sel:   items.append(("Base", name, BASE[name]))
+    items = []
+    for n in top_sel:    items.append(("Top", n, TOP[n]))
+    for n in floral_sel: items.append(("Middle–Floral", n, MIDDLE_FLORAL[n]))
+    for n in herb_sel:   items.append(("Middle–Herb", n, MIDDLE_HERB[n]))
+    for n in base_sel:   items.append(("Base", n, BASE[n]))
 
-    total_weight = sum(f for (_,_,f) in items) or 1
+    total_weight = sum(f for *_, f in items) or 1
 
-    rows = []
-    total_drops = 0
+    rows, total_drops = [], 0
     for cat, name, factor in items:
         pct = round(factor * 100.0 / total_weight, 1)
         ml  = round(factor * total_amount / total_weight, 1)
-        drops = int(round(ml / 0.1 * 2))  # 0.1ml = 2방울 → 1ml = 20방울
+        drops = int(round(ml / 0.1 * 2))  # 0.1ml = 2방울
         total_drops += drops
-        rows.append({
-            "category": cat,
-            "name": name,
-            "img": IMAGES[name],
-            "pct": pct,
-            "ml": ml,
-            "drops": drops,
-        })
+        rows.append({"category": cat, "name": name, "img": IMAGES[name], "pct": pct, "ml": ml, "drops": drops})
     return rows, total_drops
 
 # =====================
@@ -427,8 +374,6 @@ def top():
 def middle_floral():
     total_amount = float(request.form.get("total_amount", 0))
     top_selected = get_checked_list("top", TOP)
-    if len(top_selected) < 1:
-        return redirect(url_for("top"))
     return render_template_string(MIDDLE_FLORAL_HTML,
                                   floral=MIDDLE_FLORAL, images=IMAGES, en=EN_LABEL,
                                   total_amount=round(total_amount,1), top_selected=top_selected)
@@ -438,8 +383,6 @@ def middle_herb():
     total_amount = float(request.form.get("total_amount", 0))
     top_selected = get_checked_list("top", TOP)
     floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
-    if len(floral_selected) < 1:
-        return redirect(url_for("middle_floral"))
     return render_template_string(MIDDLE_HERB_HTML,
                                   herb=MIDDLE_HERB, images=IMAGES, en=EN_LABEL,
                                   total_amount=round(total_amount,1),
@@ -451,8 +394,6 @@ def base():
     top_selected = get_checked_list("top", TOP)
     floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
     herb_selected = get_checked_list("herb", MIDDLE_HERB)
-    if len(herb_selected) < 1:
-        return redirect(url_for("middle_herb"))
     return render_template_string(BASE_HTML,
                                   base_items=BASE, images=IMAGES, en=EN_LABEL,
                                   total_amount=round(total_amount,1),
@@ -465,10 +406,6 @@ def result():
     floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
     herb_selected   = get_checked_list("herb", MIDDLE_HERB)
     base_selected   = get_checked_list("base", BASE)
-
-    if len(base_selected) < 1:
-        return redirect(url_for("base"))
-
     rows, total_drops = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
     return render_template_string(RESULT_HTML, rows=rows, total_amount=round(total_amount,1), total_drops=total_drops)
 
