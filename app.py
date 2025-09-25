@@ -54,98 +54,99 @@ STYLE = """
     body {
       font-family: system-ui, Apple SD Gothic Neo, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif;
       margin: 0; padding: 0; color: var(--fg); background:#fff;
-      font-size: 19px; line-height: 1.55;
+      font-size: 22px; line-height: 1.6;
     }
 
     .wrap {
-      max-width: 600px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 10px 5px 5px;
       min-height: 300dvh;
-      display: flex; flex-direction: column; gap: 14px;
+      display: flex; flex-direction: column; gap: 18px;
     }
 
-    h1 { font-size: 30px; margin: 2px 0 6px; text-align:center; }
-    .muted { color: var(--muted); font-size: 16px; text-align:center; }
+    h1 { font-size: 50px; margin: 2px 0 12px; text-align:center; }
+    .muted { color: var(--muted); font-size: 20px; text-align:center; }
 
     .hero {
       border: 2px solid var(--bd); border-radius: 16px; background: var(--bg);
-      padding: 16px 14px 18px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
+      padding: 20px 18px 22px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
     }
 
-    .amount-input { position: relative; width: 100%; margin-top: 8px; }
+    .amount-input { position: relative; width: 100%; margin-top: 12px; }
     .amount-box {
-      font-size: 28px; font-weight: 800; text-align: center;
-      width: 100%; height: 68px; border: 2px solid var(--sel); border-radius: 14px;
-      padding: 10px 60px 10px 14px; background:#fff;
+      font-size: 45px; font-weight: 800; text-align: center;
+      width: 100%; height: 75px; border: 2px solid var(--sel); border-radius: 14px;
+      padding: 12px 70px 12px 18px; background:#fff;
     }
     .unit-inside {
-      position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
-      color: #166534; font-size: 18px; font-weight: 800; pointer-events: none;
+      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+      color: #166534; font-size: 22px; font-weight: 800; pointer-events: none;
     }
 
-    .chips { display:flex; gap:10px; justify-content: center; margin: 12px 0 4px; flex-wrap: wrap; }
+    .chips { display:flex; gap:12px; justify-content: center; margin: 16px 0 8px; flex-wrap: wrap; }
     .chip {
-      border: 1.5px solid #b7efc5; background:#eaffef; color:#065f46;
-      padding: 8px 12px; border-radius: 999px; font-weight: 800; font-size: 15px;
+      border: 2px solid #b7efc5; background:#eaffef; color:#065f46;
+      padding: 10px 16px; border-radius: 999px; font-weight: 800; font-size: 18px;
     }
     .chip:active { transform: scale(.98); }
 
     .btn {
-      font-size: 22px; padding: 18px 20px; border-radius: 14px;
+      font-size: 28px; padding: 20px 22px; border-radius: 16px;
       background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
     }
 
-    .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 4px; gap:10px; }
-    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:6px 10px; border-radius:999px; font-size:12px; }
+    .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 6px; gap:12px; }
+    .count-badge { background:#16a34a; color:#fff; font-weight:800; padding:8px 12px; border-radius:999px; font-size:14px; }
 
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 14px; }
 
     .card {
-      position: relative; border: 2px solid var(--bd); border-radius: 14px;
-      padding: 10px 10px 70px; background:#ffffff;
+      position: relative; border: 2px solid var(--bd); border-radius: 25px;
+      padding: 12px 12px 80px; background:#ffffff;
       transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
       text-align: left; user-select: none; -webkit-user-select: none;
     }
-    .card:hover { box-shadow: 0 6px 20px rgba(20,83,45,.10); }
+    .card:hover { box-shadow: 0 8px 22px rgba(20,83,45,.12); }
 
     .thumb {
-      width:100%; aspect-ratio: 1/1; border-radius: 10px; overflow:hidden;
+      width:100%; aspect-ratio: 1/1; border-radius: 14px; overflow:hidden;
       background: var(--bg); display:flex; align-items:center; justify-content:center;
-      border:1px solid var(--bd); margin-bottom:8px;
+      border:1px solid var(--bd); margin-bottom:10px;
     }
     .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
 
-    .name { display:block; margin-top:4px; line-height:1.2; font-weight:900; font-size:18px; }
-    .en   { display:block; margin-top:2px; margin-bottom:6px; line-height:1.15; font-size:12px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
+    .name { display:block; margin-top:4px; line-height:1.3; font-weight:900; font-size:22px; }
+    .en   { display:block; margin-top:2px; margin-bottom:8px; line-height:1.2; font-size:14px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
 
-    .select-wrap { position:absolute; left:0; right:0; bottom:10px; display:flex; justify-content:center; }
+    .select-wrap { position:absolute; left:0; right:0; bottom:12px; display:flex; justify-content:center; }
     .select-pill {
-      display:inline-flex; align-items:center; gap:6px; background: var(--pill); color:#065f46;
-      border:1px solid #b7efc5; padding:8px 12px; border-radius:999px; font-weight:800;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+      display:inline-flex; align-items:center; gap:8px; background: var(--pill); color:#065f46;
+      border:2px solid #b7efc5; padding:10px 14px; border-radius:999px; font-weight:800;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); font-size:16px;
     }
 
     .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
-    .card:has(input[type="checkbox"]:checked) { background: var(--sel); border-color: var(--sel); color: var(--white); box-shadow: 0 0 0 3px rgba(34,197,94,.25) inset; }
+    .card:has(input[type="checkbox"]:checked) { background: var(--sel); border-color: var(--sel); color: var(--white); box-shadow: 0 0 0 4px rgba(34,197,94,.25) inset; }
     .card:has(input[type="checkbox"]:checked) .en { color: #e6ffe6; }
-    .card:has(input[type="checkbox"]:checked) .thumb { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.08); }
+    .card:has(input[type="checkbox"]:checked) .thumb { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.1); }
     .card:has(input[type="checkbox"]:checked) .select-pill { background: rgba(255,255,255,.15); color:#fff; border-color: rgba(255,255,255,.6); }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 18px; }
-    th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 10px; }
-    thead th { background:#f6fff6; text-align: center; }
-    .t-thumb { width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid var(--bd); }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 20px; }
+    th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 12px; }
+    thead th { background:#f6fff6; text-align: center; font-size: 21px; }
+    .t-thumb { width:70px; height:70px; border-radius:12px; object-fit:cover; border:1.5px solid var(--bd); }
 
     /* 결과 페이지만 QR 고정 */
     .qr-fixed {
-      position: fixed; top: 10px; right: 10px; width: 90px; height: 90px; z-index: 1000;
+      position: fixed; top: 12px; right: 12px; width: 100px; height: 100px; z-index: 1000;
       display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg);
+      border: 2px solid var(--bd); border-radius: 12px; padding: 8px; background: var(--bg);
     }
     .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 """
+
 
 # =====================
 # 공통 스크립트 (선택 카운터/검증: 0개도 통과)
