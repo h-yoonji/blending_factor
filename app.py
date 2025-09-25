@@ -46,13 +46,16 @@ IMAGES = {
 # =====================
 STYLE = """
   <style>
+    @import url('https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css');
+
     :root {
       --fg:#0b3d1b; --muted:#4f665c; --bd:#cceccc; --sel:#166534;
       --bg:#f6fff6; --pill:#eaffef; --white:#ffffff;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: system-ui, Apple SD Gothic Neo, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, sans-serif;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+                   Roboto, 'Helvetica Neue', 'Segoe UI', Arial, 'Noto Sans KR', sans-serif;
       margin: 0; padding: 0; color: var(--fg); background:#fff;
       font-size: 20px; line-height: 1.6;
     }
@@ -158,6 +161,7 @@ STYLE = """
 
 
 
+
 # =====================
 # 공통 스크립트 (선택 카운터/검증: 0개도 통과)
 # =====================
@@ -224,7 +228,7 @@ TOP_HTML = """
   <div class=wrap>
     <h1>Top 선택</h1>
     <div class="toolbar">
-      <span class="count-badge">선택: <span id="cnt-top">0</span></span>
+      <span class="count-badge">선택 : <span id="cnt-top">0</span></span>
     </div>
     <form method=post action="{{ url_for('middle_floral') }}" onsubmit="return validateChecked()">
       <input type="hidden" name="total_amount" value="{{ total_amount }}">
