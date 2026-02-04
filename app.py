@@ -1,492 +1,808 @@
-from flask import Flask, request, render_template_string, send_file
+from flask import Flask, send_file, request
 import qrcode, io, os
 
 app = Flask(__name__)
 
-# =====================
-# 데이터 (총 16개)
-# =====================
-TOP = {"레몬": 6, "스윗오렌지": 7, "버가못": 7, "그린애플": 1}
-MIDDLE_FLORAL = {"로즈제라늄": 3, "일랑일랑": 4, "네롤리": 3, "로즈": 1.5}
-MIDDLE_HERB   = {"라벤더": 7, "로즈마리": 4, "클라리세이지": 3, "스피어민트": 3}
-BASE          = {"로즈우드": 5, "시더우드": 6, "패출리": 4, "통카빈": 1}
-
-EN_LABEL = {
-    "레몬": "Lemon", "스윗오렌지": "Sweet Orange", "버가못": "Bergamot", "그린애플": "Green Apple",
-    "로즈제라늄": "Rose Geranium", "일랑일랑": "Ylang Ylang", "네롤리": "Neroli", "로즈": "Rose",
-    "라벤더": "Lavender", "로즈마리": "Rosemary", "클라리세이지": "Clary Sage", "스피어민트": "Spearmint",
-    "로즈우드": "Rosewood", "시더우드": "Cedarwood", "패출리": "Patchouli", "통카빈": "Tonka Bean",
-}
-
-IMAGES = {
-    # Top
-    "레몬": "images/lemon.jpg",
-    "스윗오렌지": "images/sweet_orange.jpg",
-    "버가못": "images/bergamot.jpeg",
-    "그린애플": "images/green_apple.jpeg",
-    # Floral
-    "로즈제라늄": "images/rose_geranium.jpg",
-    "일랑일랑": "images/ylangylang.jpg",
-    "네롤리": "images/neroli.jpg",
-    "로즈": "images/rose.png",
-    # Herb
-    "라벤더": "images/lavender.png",
-    "로즈마리": "images/rosemary.png",
-    "클라리세이지": "images/clary_sage.jpg",
-    "스피어민트": "images/spearmint.jpg",
-    # Base
-    "로즈우드": "images/rosewood.jpg",
-    "시더우드": "images/cedarwood.jpeg",
-    "패출리": "images/patchouli.jpeg",
-    "통카빈": "images/tonka_bean.jpg",
-}
-
-# =====================
-# 스타일 (일반 문자열)
-# =====================
-STYLE = """
+HTML = """<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2B5A3F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>에센셜 오일 블렌딩 계산기</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
   <style>
-    @import url('https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css');
-
     :root {
-      --fg:#0b3d1b; --muted:#4f665c; --bd:#cceccc; --sel:#166534;
-      --bg:#f6fff6; --pill:#eaffef; --white:#ffffff;
+      --bg: #F5F2EC;
+      --surface: #FFFFFF;
+      --primary: #2B5A3F;
+      --primary-hover: #1F4830;
+      --primary-light: #E3EDE6;
+      --primary-pale: #F0F5F1;
+      --accent: #C4963A;
+      --accent-light: #FDF6E9;
+      --text: #1A1D1B;
+      --text-2: #5E6B61;
+      --text-3: #8A9A8D;
+      --border: #D4DDD7;
+      --border-light: #E6ECE8;
+      --shadow-s: 0 1px 4px rgba(0,0,0,.05);
+      --shadow-m: 0 4px 16px rgba(0,0,0,.07);
+      --r-s: 8px; --r-m: 14px; --r-l: 20px; --r-full: 999px;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
     body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
-                   Roboto, 'Helvetica Neue', 'Segoe UI', Arial, 'Noto Sans KR', sans-serif;
-      margin: 0; padding: 0; color: var(--fg); background:#fff;
-      font-size: 20px; line-height: 1.6;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
+      overscroll-behavior-y: none;
     }
 
-    .wrap {
-      max-width: 800px;
+    /* ========== Layout ========== */
+    #app {
+      max-width: 500px;
       margin: 0 auto;
-      padding: 10px 5px 5px;
-      min-height: 800dvh;
-      display: flex; flex-direction: column; gap: 14px;
+      min-height: 100dvh;
+      background: var(--surface);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 40px rgba(0,0,0,.06);
     }
 
-    h1 { font-size: 50px; margin: 2px 0 10px; text-align:center; font-weight: 900; }
-    .muted { color: var(--muted); font-size: 25px; text-align:center; font-weight: 500; }
-
-    .hero {
-      border: 2px solid var(--bd); border-radius: 16px; background: var(--bg);
-      padding: 24px 20px 28px; box-shadow: 0 4px 18px rgba(20,83,45,.06);
-      display:flex; flex-direction:column; gap:20px; /* 컨텐츠 간격 일정화 */
+    /* ========== Progress ========== */
+    .prog-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      padding: 14px 20px 10px;
+      border-bottom: 1px solid var(--border-light);
     }
-
-    .amount-input { position: relative; width: 100%; }
-    .amount-box {
-      font-size: 48px; font-weight: 800; text-align: center;
-      width: 100%; height: 72px; border: 2px solid var(--sel); border-radius: 14px;
-      padding: 10px 60px 10px 14px; background:#fff;
+    .prog-track {
+      height: 5px;
+      background: var(--border-light);
+      border-radius: 3px;
+      overflow: hidden;
     }
-    .unit-inside {
-      position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
-      color: #166534; font-size: 20px; font-weight: 800; pointer-events: none;
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #3D8B5E);
+      border-radius: 3px;
+      transition: width .45s cubic-bezier(.4,0,.2,1);
     }
-
-    /* 칩 & 뱃지 전부 동일 크기 */
-    .chip,
-    .select-pill,
-    .count-badge {
-      border: 2px solid #b7efc5;
-      background:#eaffef;
-      color:#065f46;
-      padding: 14px 32px;
-      border-radius: 999px;
-      font-weight: 800;
-      font-size: 22px;
-      min-width: 240px;
-      text-align: center;
-      display: inline-flex;
-      justify-content: center;
+    .prog-info {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      margin-top: 20px;   /* 위쪽 간격 */
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 600;
     }
-    .chip:active { transform: scale(.98); }
+    .prog-counter { color: var(--text-3); }
+    .prog-name { color: var(--primary); }
 
-    .btn {
-      font-size: 25px; padding: 30px 40px; border-radius: 14px;
-      background: var(--sel); color: #fff; font-weight: 800; cursor: pointer; border: none; width: 100%;
+    /* ========== Steps ========== */
+    .step-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .step {
+      padding: 28px 20px 110px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp .35s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    .step.back {
+      animation: fadeUpBack .35s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUpBack {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    .toolbar { display:flex; justify-content: center; align-items:center; margin-top: 6px; gap:12px; }
-
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
-
-    .card {
-      position: relative; border: 2px solid var(--bd); border-radius: 25px;
-      padding: 10px 10px 55px; background:#ffffff;
-      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
-      text-align: left; user-select: none; -webkit-user-select: none;
-      font-size: 20px;
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.25;
     }
-    .card:hover { box-shadow: 0 6px 20px rgba(20,83,45,.10); }
-
-    .thumb {
-      width:100%; aspect-ratio: 1/1; border-radius: 10px; overflow:hidden;
-      background: var(--bg); display:flex; align-items:center; justify-content:center;
-      border:1px solid var(--bd); margin-bottom:10px;
+    .page-sub {
+      font-size: 14px;
+      color: var(--text-2);
+      margin-top: 4px;
+      margin-bottom: 24px;
+      line-height: 1.5;
     }
-    .thumb img { width:100%; height:100%; object-fit: cover; object-position: center; display:block; }
 
-    .name { display:block; margin-top:4px; line-height:1.25; font-weight:900; font-size:30px; }
-    .en   { display:block; margin-top:2px; margin-bottom:50px; line-height:1.2; font-size:25px; color:#2e7d32; font-weight:700; letter-spacing:.2px; }
-
-    .select-wrap { position:absolute; left:0; right:0; bottom:12px; display:flex; justify-content:center; }
-    .card input[type="checkbox"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
-    .card:has(input[type="checkbox"]:checked) { background: var(--sel); border-color: var(--sel); color: var(--white); box-shadow: 0 0 0 3px rgba(34,197,94,.25) inset; }
-    .card:has(input[type="checkbox"]:checked) .en { color: #e6ffe6; }
-    .card:has(input[type="checkbox"]:checked) .thumb { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.08); }
-    .card:has(input[type="checkbox"]:checked) .select-pill { background: rgba(255,255,255,.15); color:#fff; border-color: rgba(255,255,255,.6); }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 22px; }
-    th, td { border-bottom: 1px solid #e6f5e6; text-align: center; padding: 14px; }
-    thead th { background:#f6fff6; text-align: center; font-size: 22px; font-weight: 800; }
-    .t-thumb { width:70px; height:70px; border-radius:10px; object-fit:cover; border:1px solid var(--bd); }
-
-    /* 결과 페이지만 QR 고정 */
-    .qr-fixed {
-      position: fixed; top: 10px; right: 10px; width: 90px; height: 90px; z-index: 1000;
+    /* ========== Amount Input ========== */
+    .amount-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 36px 0 20px;
+    }
+    .amount-visual {
+      width: 68px; height: 68px;
+      background: var(--primary-pale);
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--bd); border-radius: 10px; padding: 6px; background: var(--bg);
+      font-size: 32px;
     }
-    .qr-fixed img { width: 100%; height: 100%; object-fit: contain; }
+    .amount-field {
+      position: relative;
+      width: 100%;
+      max-width: 300px;
+    }
+    .amount-input {
+      font-size: 36px;
+      font-weight: 800;
+      text-align: center;
+      width: 100%;
+      padding: 14px 50px 14px 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--r-m);
+      outline: none;
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s;
+      -moz-appearance: textfield;
+    }
+    .amount-input::-webkit-inner-spin-button,
+    .amount-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .amount-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(43,90,63,.12);
+    }
+    .amount-unit {
+      position: absolute;
+      right: 16px; top: 50%; transform: translateY(-50%);
+      font-size: 16px; font-weight: 700;
+      color: var(--text-3);
+      pointer-events: none;
+    }
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .chip {
+      padding: 10px 22px;
+      border-radius: var(--r-full);
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+      transition: all .15s;
+    }
+    .chip:active { transform: scale(.94); }
+    .chip:hover, .chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    /* ========== Previous Selections ========== */
+    .prev-sel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .prev-pill {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: var(--r-full);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ========== Selection Info ========== */
+    .sel-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: var(--text-2);
+    }
+    .sel-badge {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      padding: 2px 11px;
+      border-radius: var(--r-full);
+      font-size: 13px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    /* ========== Card Grid ========== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .oil-card {
+      position: relative;
+      border: 2px solid var(--border-light);
+      border-radius: var(--r-l);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+      background: var(--surface);
+      user-select: none; -webkit-user-select: none;
+    }
+    .oil-card:active { transform: scale(.97); transition: transform .1s; }
+    .oil-card.on {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 0 0 1px var(--primary), var(--shadow-m);
+    }
+    .oil-card .c-img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      background: var(--primary-pale);
+    }
+    .oil-card .c-body { padding: 10px 12px 14px; }
+    .oil-card .c-name {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .oil-card .c-en {
+      font-size: 11.5px;
+      color: var(--text-3);
+      margin-top: 1px;
+      font-weight: 500;
+    }
+    .oil-card.on .c-en { color: var(--primary); }
+    .oil-card .c-factor {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+    }
+    .oil-card .c-check {
+      position: absolute;
+      top: 10px; right: 10px;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: none;
+      align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: var(--shadow-s);
+    }
+    .oil-card.on .c-check { display: flex; }
+
+    /* ========== Bottom Nav ========== */
+    .bot-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 500px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-light);
+      padding: 10px 20px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    .btn {
+      flex: 1;
+      padding: 15px 20px;
+      border-radius: var(--r-m);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all .12s;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-go {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-go:hover { background: var(--primary-hover); }
+    .btn-back {
+      background: var(--border-light);
+      color: var(--text);
+      flex: 0 0 auto;
+    }
+
+    /* ========== Result ========== */
+    .r-card {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-l);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      box-shadow: var(--shadow-s);
+    }
+    .r-card .r-img {
+      width: 52px; height: 52px;
+      border-radius: var(--r-s);
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid var(--border-light);
+    }
+    .r-card .r-info { flex: 1; min-width: 0; }
+    .r-card .r-cat {
+      font-size: 11px;
+      color: var(--text-3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .r-card .r-name {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    .r-bar-track {
+      height: 5px;
+      background: var(--border-light);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .r-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #4DA66E);
+      border-radius: 3px;
+      transition: width .7s cubic-bezier(.4,0,.2,1);
+      width: 0;
+    }
+    .r-nums { text-align: right; flex-shrink: 0; }
+    .r-drops {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+    .r-drops small {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .r-ml {
+      font-size: 11px;
+      color: var(--text-3);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .summary {
+      background: var(--primary);
+      color: #fff;
+      border-radius: var(--r-l);
+      padding: 22px 16px;
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .summary .s-val {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .summary .s-lbl {
+      font-size: 11px;
+      opacity: .75;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .qr-box {
+      text-align: center;
+      margin-top: 28px;
+      padding: 20px;
+      background: var(--primary-pale);
+      border-radius: var(--r-l);
+    }
+    .qr-box img {
+      width: 110px; height: 110px;
+      border-radius: var(--r-s);
+      border: 1px solid var(--border-light);
+    }
+    .qr-box p {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 8px;
+    }
+
+    .empty-box {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-3);
+    }
+    .empty-box .e-icon { font-size: 52px; margin-bottom: 14px; }
+    .empty-box p { font-size: 15px; }
+
+    .notice-box {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--accent-light);
+      border-radius: var(--r-m);
+      font-size: 13px;
+      color: #7A6230;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+    .notice-box .n-icon { flex-shrink: 0; font-size: 16px; }
+
+    @media (max-width: 370px) {
+      .card-grid { gap: 8px; }
+      .oil-card .c-body { padding: 8px 10px 12px; }
+      .oil-card .c-name { font-size: 15px; }
+      .page-title { font-size: 22px; }
+      .amount-input { font-size: 30px; }
+    }
   </style>
-"""
-
-
-
-
-
-# =====================
-# 공통 스크립트 (선택 카운터/검증: 0개도 통과)
-# =====================
-COMMON_SCRIPTS = """
-<script>
-function setupSelection(groupName, counterId) {
-  const form = document.querySelector('form');
-  if (!form) return;
-  const counter = document.getElementById(counterId);
-  function refresh() {
-    const checked = form.querySelectorAll('input[name="'+groupName+'"]:checked').length;
-    if(counter) counter.textContent = checked;
-  }
-  form.querySelectorAll('input[name="'+groupName+'"]').forEach(b => b.addEventListener('change', refresh));
-  refresh();
-}
-// 0개 선택도 허용
-function validateChecked() { return true; }
-
-// 빠른 선택칩
-function pick(val) {
-  const inp = document.getElementById("total_amount");
-  if(inp) { inp.value = val; inp.focus(); }
-}
-</script>
-"""
-
-# =====================
-# 템플릿 (일반 문자열, STYLE/JS는 |safe 로 삽입)
-# =====================
-AMOUNT_START_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}
 </head>
 <body>
-  <div class="wrap">
-    <h1>총량 입력</h1>
-    <div class="hero">
-      <form method="post" action="{{ url_for('top') }}" style="display:flex; flex-direction:column; align-items:center; gap:28px;">
-        <p class="muted">오늘 만들 에센셜 오일의 총량을 입력하세요.</p>
-        
-        <div class="amount-input" style="width:100%; max-width:480px;">
-          <input id="total_amount" class="amount-box" type="number" name="total_amount" step="0.1" min="0.1" required placeholder="예) 3.0">
-          <span class="unit-inside">ml</span>
-        </div>
-        
-        <div class="chips">
-          <button class="chip" type="button" onclick="pick(3.0)">3.0 ml</button>
-          <button class="chip" type="button" onclick="pick(4.5)">4.5 ml</button>
-          <button class="chip" type="button" onclick="pick(6.0)">6.0 ml</button>
-        </div>
-        
-        <button class="btn" type="submit">다음 (Top 선택)</button>
-      </form>
+<div id="app">
+  <header class="prog-header">
+    <div class="prog-track"><div class="prog-fill" id="pFill" style="width:16.7%"></div></div>
+    <div class="prog-info">
+      <span class="prog-counter" id="pCnt">1 / 6</span>
+      <span class="prog-name" id="pName">총량 입력</span>
     </div>
-  </div>
-</body></html>
-"""
+  </header>
 
-TOP_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
-<body>
-  <div class=wrap>
-    <h1>Top 선택</h1>
-    <div class="toolbar">
-      <span class="count-badge">선택 :&nbsp;<span id="cnt-top">0</span></span>
-    </div>
-    <form method=post action="{{ url_for('middle_floral') }}" onsubmit="return validateChecked()">
-      <input type="hidden" name="total_amount" value="{{ total_amount }}">
-      <div class=grid>
-        {% for name in top_items.keys() %}
-        <label class=card>
-          <input type="checkbox" name="top" value="{{name}}">
-          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}" alt="{{name}}"></span>
-          <span class=name>{{name}}</span>
-          <span class=en>{{ en[name] }}</span>
-          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
-        </label>
-        {% endfor %}
+  <div class="step-area" id="stepArea"></div>
+
+  <nav class="bot-nav" id="botNav">
+    <button class="btn btn-back" id="bBack" onclick="go(-1)" style="display:none">← 이전</button>
+    <button class="btn btn-go" id="bNext" onclick="go(1)">다음</button>
+  </nav>
+</div>
+
+<script>
+// ============================
+// DATA
+// ============================
+const CATS = [
+  { key:'top', title:'Top Note', emoji:'🍋', sub:'시트러스 & 프레시 계열', oils:{
+    '레몬':      {f:6,   en:'Lemon',         img:'images/lemon.jpg'},
+    '스윗오렌지': {f:7,   en:'Sweet Orange',  img:'images/sweet_orange.jpg'},
+    '버가못':     {f:7,   en:'Bergamot',      img:'images/bergamot.jpeg'},
+    '그린애플':   {f:1,   en:'Green Apple',   img:'images/green_apple.jpeg'}
+  }},
+  { key:'floral', title:'Middle – Floral', emoji:'🌸', sub:'플로랄 계열', oils:{
+    '로즈제라늄':  {f:3,   en:'Rose Geranium', img:'images/rose_geranium.jpg'},
+    '일랑일랑':    {f:4,   en:'Ylang Ylang',   img:'images/ylangylang.jpg'},
+    '네롤리':      {f:3,   en:'Neroli',        img:'images/neroli.jpg'},
+    '로즈':        {f:1.5, en:'Rose',          img:'images/rose.png'}
+  }},
+  { key:'herb', title:'Middle – Herb', emoji:'🌿', sub:'허브 계열', oils:{
+    '라벤더':       {f:7, en:'Lavender',    img:'images/lavender.png'},
+    '로즈마리':     {f:4, en:'Rosemary',    img:'images/rosemary.png'},
+    '클라리세이지':  {f:3, en:'Clary Sage',  img:'images/clary_sage.jpg'},
+    '스피어민트':    {f:3, en:'Spearmint',   img:'images/spearmint.jpg'}
+  }},
+  { key:'base', title:'Base Note', emoji:'🪵', sub:'우디 & 앰버 계열', oils:{
+    '로즈우드': {f:5, en:'Rosewood',   img:'images/rosewood.jpg'},
+    '시더우드': {f:6, en:'Cedarwood',  img:'images/cedarwood.jpeg'},
+    '패출리':   {f:4, en:'Patchouli',  img:'images/patchouli.jpeg'},
+    '통카빈':   {f:1, en:'Tonka Bean', img:'images/tonka_bean.jpg'}
+  }}
+];
+
+const STEPS = ['총량 입력','Top Note','Middle – Floral','Middle – Herb','Base Note','블렌딩 결과'];
+
+// ============================
+// STATE
+// ============================
+let cur = 0;
+let amt = 0;
+const sel = { top:new Set(), floral:new Set(), herb:new Set(), base:new Set() };
+let direction = 1; // 1 = forward, -1 = back
+
+// ============================
+// NAVIGATION
+// ============================
+function go(dir) {
+  if (dir > 0 && cur === 0) {
+    const inp = document.getElementById('amtInput');
+    const v = parseFloat(inp?.value);
+    if (!v || v <= 0) { inp?.focus(); inp?.classList.add('shake'); setTimeout(()=>inp?.classList.remove('shake'),400); return; }
+    amt = v;
+  }
+  const next = cur + dir;
+  if (next < 0 || next > 5) return;
+  direction = dir;
+  cur = next;
+  render();
+  document.querySelector('.step-area').scrollTo(0,0);
+}
+
+function restart() {
+  amt = 0;
+  for (const k in sel) sel[k] = new Set();
+  direction = -1;
+  cur = 0;
+  render();
+}
+
+// ============================
+// RENDER
+// ============================
+function render() {
+  const area = document.getElementById('stepArea');
+  const dirClass = direction < 0 ? 'back' : '';
+
+  if (cur === 0) area.innerHTML = renderAmount(dirClass);
+  else if (cur <= 4) area.innerHTML = renderSel(cur - 1, dirClass);
+  else area.innerHTML = renderResult(dirClass);
+
+  // Trigger bar animations on result page
+  if (cur === 5) {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.r-bar-fill[data-w]').forEach(el => {
+        el.style.width = el.dataset.w + '%';
+      });
+    });
+  }
+
+  updateUI();
+}
+
+function updateUI() {
+  const fill = document.getElementById('pFill');
+  const cnt  = document.getElementById('pCnt');
+  const name = document.getElementById('pName');
+  const back = document.getElementById('bBack');
+  const next = document.getElementById('bNext');
+  const nav  = document.getElementById('botNav');
+
+  fill.style.width = ((cur+1)/6*100)+'%';
+  cnt.textContent = (cur+1)+' / 6';
+  name.textContent = STEPS[cur];
+
+  back.style.display = cur > 0 && cur < 5 ? '' : 'none';
+  if (cur === 5) { nav.style.display = 'none'; }
+  else {
+    nav.style.display = '';
+    next.textContent = cur === 4 ? '결과 보기 →' : '다음 →';
+  }
+}
+
+// ============================
+// STEP RENDERERS
+// ============================
+function renderAmount(dc) {
+  return `<div class="step ${dc}">
+    <h1 class="page-title">🧪 에센셜 오일 블렌딩</h1>
+    <p class="page-sub">만들 에센셜 오일의 총 용량(ml)을 입력하세요.<br>블렌딩 팩터 비율로 각 오일의 방울 수를 계산합니다.</p>
+    <div class="amount-section">
+      <div class="amount-visual">💧</div>
+      <div class="amount-field">
+        <input class="amount-input" id="amtInput" type="number" step="0.1" min="0.1"
+               inputmode="decimal" value="${amt||''}" placeholder="0.0"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();go(1)}">
+        <span class="amount-unit">ml</span>
       </div>
-      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Floral)</button></p>
-    </form>
-    <script>setupSelection('top','cnt-top');</script>
-  </div>
-</body></html>
-"""
-
-MIDDLE_FLORAL_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
-<body>
-  <div class=wrap>
-    <h1>Middle – Floral</h1>
-    <div class="toolbar">
-      <span class="count-badge">선택 :&nbsp;<span id="cnt-floral">0</span></span>
-    </div>
-    <form method=post action="{{ url_for('middle_herb') }}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{ total_amount }}">
-      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
-      <div class=grid>
-        {% for name in floral.keys() %}
-        <label class=card>
-          <input type="checkbox" name="floral" value="{{name}}">
-          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
-          <span class=name>{{name}}</span>
-          <span class=en>{{ en[name] }}</span>
-          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
-        </label>
-        {% endfor %}
+      <div class="chips">
+        <button class="chip" onclick="pickAmt(3)">3.0 ml</button>
+        <button class="chip" onclick="pickAmt(4.5)">4.5 ml</button>
+        <button class="chip" onclick="pickAmt(6)">6.0 ml</button>
+        <button class="chip" onclick="pickAmt(10)">10 ml</button>
       </div>
-      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Middle–Herb)</button></p>
-    </form>
-    <script>setupSelection('floral','cnt-floral');</script>
-  </div>
-</body></html>
-"""
-
-MIDDLE_HERB_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
-<body>
-  <div class=wrap>
-    <h1>Middle – Herb</h1>
-    <div class="toolbar">
-      <span class="count-badge">선택 :&nbsp;<span id="cnt-herb">0</span></span>
     </div>
-    <form method=post action="{{ url_for('base') }}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{ total_amount }}">
-      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
-      {% for f in floral_selected %}<input type=hidden name="floral" value="{{f}}">{% endfor %}
-      <div class=grid>
-        {% for name in herb.keys() %}
-        <label class=card>
-          <input type="checkbox" name="herb" value="{{name}}">
-          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
-          <span class=name>{{name}}</span>
-          <span class=en>{{ en[name] }}</span>
-          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
-        </label>
-        {% endfor %}
-      </div>
-      <p style="margin-top:12px;"><button class=btn type=submit>다음 (Base)</button></p>
-    </form>
-    <script>setupSelection('herb','cnt-herb');</script>
-  </div>
-</body></html>
-"""
-
-BASE_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}{{ COMMON_SCRIPTS|safe }}</head>
-<body>
-  <div class=wrap>
-    <h1>Base 선택</h1>
-    <div class="toolbar">
-      <span class="count-badge">선택 :&nbsp;<span id="cnt-base">0</span></span>
+    <div class="notice-box">
+      <span class="n-icon">💡</span>
+      <span>0.1 ml = 2방울 기준으로 계산됩니다. 총량에 맞춰 각 오일의 정확한 방울 수를 알려드립니다.</span>
     </div>
-    <form method=post action="{{ url_for('result') }}" onsubmit="return validateChecked()">
-      <input type=hidden name=total_amount value="{{ total_amount }}">
-      {% for t in top_selected %}<input type=hidden name="top" value="{{t}}">{% endfor %}
-      {% for f in floral_selected %}<input type=hidden name="floral" value="{{f}}">{% endfor %}
-      {% for h in herb_selected %}<input type=hidden name="herb" value="{{h}}">{% endfor %}
-      <div class=grid>
-        {% for name in base_items.keys() %}
-        <label class=card>
-          <input type="checkbox" name="base" value="{{name}}">
-          <span class=thumb><img src="{{ url_for('static', filename=images.get(name)) }}"></span>
-          <span class=name>{{name}}</span>
-          <span class=en>{{ en[name] }}</span>
-          <div class=select-wrap><span class=select-pill>✔ 선택</span></div>
-        </label>
-        {% endfor %}
+  </div>`;
+}
+
+function renderSel(ci, dc) {
+  const cat = CATS[ci];
+
+  // Previous selections
+  let prev = '';
+  for (let i = 0; i < ci; i++) {
+    const c = CATS[i];
+    if (sel[c.key].size) {
+      const names = [...sel[c.key]].join(', ');
+      prev += `<span class="prev-pill">${c.emoji} ${names}</span>`;
+    }
+  }
+  const prevHTML = prev ? `<div class="prev-sel">${prev}</div>` : '';
+
+  // Cards
+  let cards = '';
+  for (const [name, oil] of Object.entries(cat.oils)) {
+    const on = sel[cat.key].has(name) ? 'on' : '';
+    cards += `<div class="oil-card ${on}" onclick="toggle('${cat.key}','${name}',this)">
+      <img class="c-img" src="/static/${oil.img}" alt="${name}" loading="lazy">
+      <div class="c-body">
+        <div class="c-name">${name}</div>
+        <div class="c-en">${oil.en}</div>
+        <div class="c-factor">⚗ ${oil.f}</div>
       </div>
-      <p style="margin-top:12px;"><button class=btn type=submit>결과 보기</button></p>
-    </form>
-    <script>setupSelection('base','cnt-base');</script>
-  </div>
-</body></html>
-"""
+      <div class="c-check">✓</div>
+    </div>`;
+  }
 
-RESULT_HTML = """
-<!doctype html><html lang=ko><head><meta charset=utf-8>
-<title>에센셜 오일 부향률 계산 프로그램</title>{{ STYLE|safe }}</head>
-<body>
-  <div class="qr-fixed"><img src="{{ url_for('qr_png') }}" alt="QR"></div>
-  <div class=wrap>
-    <h1>블렌딩 결과</h1>
-    <p class=muted>선택한 카드들의 블렌딩 비율로 총량을 배분합니다. (0.1ml = 2방울)</p>
-    <table>
-      <thead>
-        <tr>
-          <th>구분</th>
-          <th>이미지</th>
-          <th>카드</th>
-          <th>비율(%)</th>
-          <th>ml</th>
-          <th>방울 수</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        <tr>
-          <td>{{row.category}}</td>
-          <td><img class="t-thumb" src="{{ url_for('static', filename=row.img) }}"></td>
-          <td>{{row.name}}</td>
-          <td>{{row.pct}}</td>
-          <td>{{row.ml}}</td>
-          <td>{{row.drops}}</td>
-        </tr>
-        {% endfor %}
-        <tr>
-          <th colspan=3>합계</th>
-          <th>100.0</th>
-          <th>{{total_amount}}</th>
-          <th>{{total_drops}}</th>
-        </tr>
-      </tbody>
-    </table>
-    <p style="margin-top:12px; text-align:center;">
-      <a class=btn href="{{ url_for('index') }}">처음부터 다시</a>
-    </p>
-  </div>
-</body></html>
-"""
+  return `<div class="step ${dc}">
+    <h1 class="page-title">${cat.emoji} ${cat.title}</h1>
+    <p class="page-sub">${cat.sub} — 원하는 오일을 자유롭게 선택하세요 (복수 선택 가능)</p>
+    ${prevHTML}
+    <div class="sel-row">선택됨 <span class="sel-badge" id="cnt_${cat.key}">${sel[cat.key].size}</span></div>
+    <div class="card-grid">${cards}</div>
+  </div>`;
+}
 
-# =====================
-# 유틸
-# =====================
-def get_checked_list(param_name: str, allowed: dict):
-    vals = request.form.getlist(param_name)
-    return [v for v in vals if v in allowed]
+function renderResult(dc) {
+  // Gather items
+  const items = [];
+  for (const cat of CATS) {
+    for (const name of sel[cat.key]) {
+      const oil = cat.oils[name];
+      items.push({ cat: cat.title, emoji: cat.emoji, name, f: oil.f, img: oil.img });
+    }
+  }
+  const totalW = items.reduce((s,i) => s + i.f, 0) || 1;
 
-def build_rows(total_amount, top_sel, floral_sel, herb_sel, base_sel):
-    items = []
-    for n in top_sel:    items.append(("Top", n, TOP[n]))
-    for n in floral_sel: items.append(("Middle–Floral", n, MIDDLE_FLORAL[n]))
-    for n in herb_sel:   items.append(("Middle–Herb", n, MIDDLE_HERB[n]))
-    for n in base_sel:   items.append(("Base", n, BASE[n]))
-    total_weight = sum(f for *_, f in items) or 1
+  let cards = '', totalDrops = 0;
+  for (const it of items) {
+    const pct = (it.f / totalW * 100).toFixed(1);
+    const ml  = (it.f * amt / totalW).toFixed(1);
+    const dr  = Math.round(parseFloat(ml) / 0.1 * 2);
+    totalDrops += dr;
+    cards += `<div class="r-card">
+      <img class="r-img" src="/static/${it.img}" alt="${it.name}">
+      <div class="r-info">
+        <div class="r-cat">${it.emoji} ${it.cat}</div>
+        <div class="r-name">${it.name}</div>
+        <div class="r-bar-track"><div class="r-bar-fill" data-w="${pct}" style="width:0"></div></div>
+      </div>
+      <div class="r-nums">
+        <div class="r-drops">${dr}<small>방울</small></div>
+        <div class="r-ml">${ml} ml · ${pct}%</div>
+      </div>
+    </div>`;
+  }
 
-    rows, total_drops = [], 0
-    for cat, name, factor in items:
-        pct   = round(factor * 100.0 / total_weight, 1)
-        ml    = round(factor * total_amount / total_weight, 1)
-        drops = int(round(ml / 0.1 * 2))  # 0.1ml = 2방울
-        total_drops += drops
-        rows.append({"category": cat, "name": name, "img": IMAGES[name], "pct": pct, "ml": ml, "drops": drops})
-    return rows, total_drops
+  const empty = items.length === 0
+    ? `<div class="empty-box"><div class="e-icon">🤔</div><p>선택된 오일이 없습니다.<br>이전 단계에서 오일을 선택해주세요.</p></div>`
+    : '';
 
-# =====================
-# 라우트
-# =====================
+  const summaryHTML = items.length > 0
+    ? `<div class="summary">
+        <div><div class="s-val">${items.length}종</div><div class="s-lbl">선택 오일</div></div>
+        <div><div class="s-val">${amt} ml</div><div class="s-lbl">총량</div></div>
+        <div><div class="s-val">${totalDrops}</div><div class="s-lbl">총 방울 수</div></div>
+      </div>`
+    : '';
+
+  return `<div class="step ${dc}">
+    <h1 class="page-title">📋 블렌딩 결과</h1>
+    <p class="page-sub">블렌딩 팩터 비율로 ${amt} ml를 배분한 결과입니다. (0.1 ml = 2방울)</p>
+    ${empty}
+    ${cards}
+    ${summaryHTML}
+    <div class="result-actions">
+      <button class="btn btn-back" onclick="direction=-1;cur=4;render();document.querySelector('.step-area').scrollTo(0,0)" style="flex:0 0 auto">← 수정</button>
+      <button class="btn btn-go" onclick="restart()">처음부터 다시</button>
+    </div>
+    <div class="qr-box">
+      <img src="/qr.png" alt="QR Code" loading="lazy">
+      <p>QR 코드를 스캔하면 바로 접속됩니다</p>
+    </div>
+  </div>`;
+}
+
+// ============================
+// INTERACTIONS
+// ============================
+function toggle(catKey, name, el) {
+  if (sel[catKey].has(name)) {
+    sel[catKey].delete(name);
+    el.classList.remove('on');
+  } else {
+    sel[catKey].add(name);
+    el.classList.add('on');
+  }
+  const badge = document.getElementById('cnt_'+catKey);
+  if (badge) badge.textContent = sel[catKey].size;
+}
+
+function pickAmt(v) {
+  const inp = document.getElementById('amtInput');
+  if (inp) { inp.value = v; amt = v; }
+  // Highlight active chip
+  document.querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('active', parseFloat(c.textContent) === v);
+  });
+}
+
+// ============================
+// INIT
+// ============================
+document.addEventListener('DOMContentLoaded', render);
+</script>
+
+<style>
+  .shake { animation: shake .35s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-6px); }
+    40%     { transform: translateX(6px); }
+    60%     { transform: translateX(-4px); }
+    80%     { transform: translateX(4px); }
+  }
+</style>
+</body>
+</html>"""
+
+
+# ============================
+# Flask Routes
+# ============================
 @app.get("/")
 def index():
-    return render_template_string(AMOUNT_START_HTML, STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS)
-
-@app.post("/top")
-def top():
-    total_amount = float(request.form.get("total_amount", 0))
-    return render_template_string(
-        TOP_HTML,
-        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
-        top_items=TOP, images=IMAGES, en=EN_LABEL,
-        total_amount=round(total_amount,1)
-    )
-
-@app.post("/middle_floral")
-def middle_floral():
-    total_amount   = float(request.form.get("total_amount", 0))
-    top_selected   = get_checked_list("top", TOP)  # 0개 허용
-    return render_template_string(
-        MIDDLE_FLORAL_HTML,
-        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
-        floral=MIDDLE_FLORAL, images=IMAGES, en=EN_LABEL,
-        total_amount=round(total_amount,1), top_selected=top_selected
-    )
-
-@app.post("/middle_herb")
-def middle_herb():
-    total_amount   = float(request.form.get("total_amount", 0))
-    top_selected   = get_checked_list("top", TOP)
-    floral_selected= get_checked_list("floral", MIDDLE_FLORAL)  # 0개 허용
-    return render_template_string(
-        MIDDLE_HERB_HTML,
-        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
-        herb=MIDDLE_HERB, images=IMAGES, en=EN_LABEL,
-        total_amount=round(total_amount,1),
-        top_selected=top_selected, floral_selected=floral_selected
-    )
-
-@app.post("/base")
-def base():
-    total_amount   = float(request.form.get("total_amount", 0))
-    top_selected   = get_checked_list("top", TOP)
-    floral_selected= get_checked_list("floral", MIDDLE_FLORAL)
-    herb_selected  = get_checked_list("herb", MIDDLE_HERB)      # 0개 허용
-    return render_template_string(
-        BASE_HTML,
-        STYLE=STYLE, COMMON_SCRIPTS=COMMON_SCRIPTS,
-        base_items=BASE, images=IMAGES, en=EN_LABEL,
-        total_amount=round(total_amount,1),
-        top_selected=top_selected, floral_selected=floral_selected, herb_selected=herb_selected
-    )
-
-@app.post("/result")
-def result():
-    total_amount   = float(request.form.get("total_amount", 0))
-    top_selected    = get_checked_list("top", TOP)
-    floral_selected = get_checked_list("floral", MIDDLE_FLORAL)
-    herb_selected   = get_checked_list("herb", MIDDLE_HERB)
-    base_selected   = get_checked_list("base", BASE)
-    # 모두 0개일 수도 있음 → rows 비어도 합계/총량은 표기
-    rows, total_drops = build_rows(total_amount, top_selected, floral_selected, herb_selected, base_selected)
-    return render_template_string(
-        RESULT_HTML,
-        STYLE=STYLE,
-        rows=rows, total_amount=round(total_amount,1), total_drops=total_drops
-    )
+    return HTML
 
 @app.get("/qr.png")
 def qr_png():
-    base = request.url_root.rstrip("/")
-    img = qrcode.make(f"{base}/")
-    buf = io.BytesIO(); img.save(buf, format="PNG"); buf.seek(0)
+    base_url = request.url_root.rstrip("/")
+    img = qrcode.make(f"{base_url}/")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
     return send_file(buf, mimetype="image/png", download_name="qr.png")
 
 if __name__ == "__main__":
