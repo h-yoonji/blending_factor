@@ -323,7 +323,7 @@ HTML = """<!DOCTYPE html>
       </a>
       <a class="l-link" href="https://naver.me/5ssqyvCb" target="_blank" rel="noopener">
         <div class="l-link-icon">📍</div>
-        오시는 길
+        네이버 지도
       </a>
     </div>
     <p class="l-footer">© VIVACE Aroma Therapy</p>
